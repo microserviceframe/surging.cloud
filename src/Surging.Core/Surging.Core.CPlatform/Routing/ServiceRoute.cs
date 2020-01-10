@@ -12,7 +12,7 @@ namespace Surging.Core.CPlatform.Routing
         /// <summary>
         /// 服务可用地址。
         /// </summary>
-        public IEnumerable<AddressModel> Address { get; set; }
+        public ICollection<AddressModel> Address { get; set; }
         /// <summary>
         /// 服务描述符。
         /// </summary>

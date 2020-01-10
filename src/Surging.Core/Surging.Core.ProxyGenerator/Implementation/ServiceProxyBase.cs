@@ -74,7 +74,7 @@ namespace Surging.Core.ProxyGenerator.Implementation
             if ((_cacheInterceptor==null || !command.RequestCacheEnabled)  && !existsInterceptor)
             {
                 message = await _breakeRemoteInvokeService.InvokeAsync(parameters, serviceId, _serviceKey, decodeJOject);
-                if (message == null)
+                if (message == null || message.StatusCode == StatusCode.ServiceUnavailability)
                 {
                     if (command.FallBackName != null && _serviceProvider.IsRegistered<IFallbackInvoker>(command.FallBackName) && command.Strategy == StrategyType.FallBack)
                     {
@@ -100,7 +100,7 @@ namespace Surging.Core.ProxyGenerator.Implementation
                 else 
                 {
                     message = await _breakeRemoteInvokeService.InvokeAsync(parameters, serviceId, _serviceKey, decodeJOject);
-                    if (message == null)
+                    if (message == null || message.StatusCode == StatusCode.ServiceUnavailability)
                     {
                         if (command.FallBackName != null && _serviceProvider.IsRegistered<IFallbackInvoker>(command.FallBackName) && command.Strategy == StrategyType.FallBack)
                         {
@@ -146,21 +146,19 @@ namespace Surging.Core.ProxyGenerator.Implementation
             var parameters = invocation.Arguments;
             var serviceId = invocation.ServiceId;
             var type = invocation.ReturnType;
-            var message = await _breakeRemoteInvokeService.InvokeAsync(parameters, serviceId, _serviceKey,
-                   type == typeof(Task) ? false : true);
-            if (message == null)
+            var message = await _breakeRemoteInvokeService.InvokeAsync(parameters, serviceId, _serviceKey, type == typeof(Task) ? false : true);
+            if (message == null || message.StatusCode == StatusCode.ServiceUnavailability)
             {
                 var vt =  _commandProvider.GetCommand(serviceId); 
                 var command = vt.IsCompletedSuccessfully ? vt.Result : await vt;
                 if (command.FallBackName != null && _serviceProvider.IsRegistered<IFallbackInvoker>(command.FallBackName) && command.Strategy == StrategyType.FallBack)
                 {
-                    // :todo fix return type
+                   
                     var invoker = _serviceProvider.GetInstances<IFallbackInvoker>(command.FallBackName);
                     return await invoker.Invoke(parameters, invocation.ReturnType, serviceId, _serviceKey);
                 }
                 else
                 {
-                    // :todo fix return type
                     var invoker = _serviceProvider.GetInstances<IClusterInvoker>(command.Strategy.ToString());
                     return await invoker.Invoke(parameters, invocation.ReturnType, serviceId, _serviceKey, true);
                 }
@@ -239,28 +237,7 @@ namespace Surging.Core.ProxyGenerator.Implementation
             }
             else
             {
-                switch (message.StatusCode)
-                {
-                    case StatusCode.BusinessError:
-                        throw new BusinessException(message.ExceptionMessage);
-                    case StatusCode.CommunicationError:
-                        throw new CommunicationException(message.ExceptionMessage);
-                    case StatusCode.RequestError:
-                    case StatusCode.CPlatformError:
-                    case StatusCode.UnKnownError:
-                        throw new CPlatformException(message.ExceptionMessage, message.StatusCode);
-                    case StatusCode.DataAccessError:
-                        throw new DataAccessException(message.ExceptionMessage);
-                    case StatusCode.UnAuthentication:
-                        throw new UnAuthenticationException(message.ExceptionMessage);
-                    case StatusCode.UnAuthorized:
-                        throw new UnAuthorizedException(message.ExceptionMessage);
-                    case StatusCode.UserFriendly:
-                        throw new UserFriendlyException(message.ExceptionMessage);
-                    case StatusCode.ValidateError:
-                        throw new ValidateException(message.ExceptionMessage);
-                }
-                throw new CPlatformException(message.ExceptionMessage, message.StatusCode);
+                throw message.GetExceptionByStatusCode();
             }
 
             return result;
@@ -283,28 +260,7 @@ namespace Surging.Core.ProxyGenerator.Implementation
             }
             else
             {
-                switch (message.StatusCode)
-                {
-                    case StatusCode.BusinessError:
-                        throw new BusinessException(message.ExceptionMessage);
-                    case StatusCode.CommunicationError:
-                        throw new CommunicationException(message.ExceptionMessage);
-                    case StatusCode.RequestError:
-                    case StatusCode.CPlatformError:
-                    case StatusCode.UnKnownError:
-                        throw new CPlatformException(message.ExceptionMessage, message.StatusCode);
-                    case StatusCode.DataAccessError:
-                        throw new DataAccessException(message.ExceptionMessage);
-                    case StatusCode.UnAuthentication:
-                        throw new UnAuthenticationException(message.ExceptionMessage);
-                    case StatusCode.UnAuthorized:
-                        throw new UnAuthorizedException(message.ExceptionMessage);
-                    case StatusCode.UserFriendly:
-                        throw new UserFriendlyException(message.ExceptionMessage);
-                    case StatusCode.ValidateError:
-                        throw new ValidateException(message.ExceptionMessage);
-                }
-                throw new CPlatformException(message.ExceptionMessage, message.StatusCode);
+               throw message.GetExceptionByStatusCode();
             }
 
             return result;

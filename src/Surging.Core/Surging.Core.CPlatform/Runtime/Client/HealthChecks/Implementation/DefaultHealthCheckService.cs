@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Surging.Core.CPlatform.Address;
+using Surging.Core.CPlatform.Exceptions;
 using Surging.Core.CPlatform.Routing;
 using Surging.Core.CPlatform.Utilities;
 using System;
@@ -140,6 +141,52 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                 entry.Health = false;
             });
         }
+
+        public async Task MarkServiceRouteUnHealth(string serviceId, AddressModel address)
+        {
+            var ipAddress = address as IpAddressModel;
+            var serviceRoute = await _serviceRouteManager.GetAsync(serviceId);
+            if (serviceRoute == null)
+            {
+                throw new CPlatformException($"不存在Id为{serviceId}的路由信息");
+            }
+            var checkedServiceRoute = serviceRoute.Address.SingleOrDefault(p => ((IpAddressModel)p).Ip == ipAddress.Ip && ((IpAddressModel)p).Port == ipAddress.Port);
+            if (checkedServiceRoute != null)
+            {
+                if (checkedServiceRoute.UnhealthyTimes >= AppConfig.ServerOptions.UnhealthyTimes)
+                {
+                    serviceRoute.Address.Remove(checkedServiceRoute);
+                }
+                else
+                {
+                    checkedServiceRoute.IsHealth = false;
+                    checkedServiceRoute.UnhealthyTimes += 1;
+                }
+                await _serviceRouteManager.SetRouteAsync(serviceRoute);
+            }
+
+        }
+
+        public async Task MarkServiceRouteHealth(string serviceId, AddressModel address)
+        {
+            var ipAddress = address as IpAddressModel;
+            var serviceRoute = await _serviceRouteManager.GetAsync(serviceId);
+            if (serviceRoute == null)
+            {
+                throw new CPlatformException($"不存在Id为{serviceId}的路由信息");
+            }
+            var checkedServiceRoute = serviceRoute.Address.SingleOrDefault(p => ((IpAddressModel)p).Ip == ipAddress.Ip && ((IpAddressModel)p).Port == ipAddress.Port);
+            if (checkedServiceRoute != null)
+            {
+                if (!checkedServiceRoute.IsHealth)
+                {
+                    checkedServiceRoute.IsHealth = true;
+                    checkedServiceRoute.UnhealthyTimes = 0;
+                    await _serviceRouteManager.SetRouteAsync(serviceRoute);
+                }
+            }
+        }
+
 
         protected void OnRemoved(params HealthCheckEventArgs[] args)
         {

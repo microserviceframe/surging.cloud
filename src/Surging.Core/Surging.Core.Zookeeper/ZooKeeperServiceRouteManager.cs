@@ -146,9 +146,46 @@ namespace Surging.Core.Zookeeper
             var routes = await GetRoutesAsync(true);
             foreach (var route in routes)
             {
-                route.Address = route.Address.Except(Address);
+                route.Address = route.Address.Except(Address).ToList();
             }
             await base.SetRoutesAsync(routes);
+        }
+        protected override async Task SetRouteAsync(ServiceRouteDescriptor route)
+        {
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("准备添加服务路由。");
+            var zooKeepers = await _zookeeperClientProvider.GetZooKeepers();
+            foreach (var zooKeeper in zooKeepers)
+            {
+                await CreateSubdirectory(zooKeeper, _configInfo.RoutePath);
+
+                var path = _configInfo.RoutePath;
+                if (!path.EndsWith("/"))
+                    path += "/";
+
+
+                var nodePath = $"{path}{route.ServiceDescriptor.Id}";
+                var nodeData = _serializer.Serialize(route);
+                if (await zooKeeper.Item2.existsAsync(nodePath) == null)
+                {
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                        _logger.LogDebug($"节点：{nodePath}不存在将进行创建。");
+
+                    await zooKeeper.Item2.createAsync(nodePath, nodeData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                }
+                else
+                {
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                        _logger.LogDebug($"将更新节点：{nodePath}的数据。");
+
+                    var onlineData = (await zooKeeper.Item2.getDataAsync(nodePath)).Data;
+                    if (!DataEquals(nodeData, onlineData))
+                        await zooKeeper.Item2.setDataAsync(nodePath, nodeData);
+                }
+                if (_logger.IsEnabled(LogLevel.Information))
+                    _logger.LogInformation("服务路由添加成功。");
+            }
+
         }
 
         public override async Task SetRoutesAsync(IEnumerable<ServiceRoute> routes)

@@ -110,6 +110,23 @@ namespace Surging.Core.CPlatform.Routing.Implementation
 
             return SetRoutesAsync(descriptors);
         }
+
+        public virtual Task SetRouteAsync(ServiceRoute route)
+        {
+            if (route == null)
+                throw new ArgumentNullException(nameof(route));
+            var descriptor = new ServiceRouteDescriptor
+            {
+                AddressDescriptors = route.Address?.Select(address => new ServiceAddressDescriptor
+                {
+                    Value = _serializer.Serialize(address)
+                }) ?? Enumerable.Empty<ServiceAddressDescriptor>(),
+                ServiceDescriptor = route.ServiceDescriptor
+            };
+            return SetRouteAsync(descriptor);
+        }
+
+
         public abstract Task RemveAddressAsync(IEnumerable<AddressModel> Address);
 
         /// <summary>
@@ -126,7 +143,9 @@ namespace Surging.Core.CPlatform.Routing.Implementation
         /// <param name="routes">服务路由集合。</param>
         /// <returns>一个任务。</returns>
         protected abstract Task SetRoutesAsync(IEnumerable<ServiceRouteDescriptor> routes);
-        
+
+        protected abstract Task SetRouteAsync(ServiceRouteDescriptor route);
+
         protected void OnCreated(params ServiceRouteEventArgs[] args)
         {
             if (_created == null)

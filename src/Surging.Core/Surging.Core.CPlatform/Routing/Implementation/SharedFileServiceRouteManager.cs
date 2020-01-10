@@ -75,6 +75,12 @@ namespace Surging.Core.CPlatform.Routing.Implementation
             return _routes;
         }
 
+        protected override async Task SetRouteAsync(ServiceRouteDescriptor route)
+        {
+            throw new NotImplementedException();
+        }
+
+
         /// <summary>
         ///     清空所有的服务路由。
         /// </summary>
@@ -108,7 +114,7 @@ namespace Surging.Core.CPlatform.Routing.Implementation
             var routes = await GetRoutesAsync(true);
             foreach (var route in routes)
             {
-                route.Address = route.Address.Except(Address);
+                route.Address = route.Address.Except(Address).ToList();
             }
             await base.SetRoutesAsync(routes);
         }

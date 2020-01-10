@@ -69,7 +69,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.Address.Resolvers.Implementation
         /// 7.拿到服务命今
         /// 8.根据负载分流策略拿到一个选择器
         /// 9.返回addressmodel
-        public async ValueTask<AddressModel> Resolver(string serviceId, string item)
+        public async ValueTask<AddressModel> Resolver(string serviceId, string item, bool isRetry = false)
         {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug($"准备为服务id：{serviceId}，解析可用地址。");
@@ -104,7 +104,19 @@ namespace Surging.Core.CPlatform.Runtime.Client.Address.Resolvers.Implementation
                 {
                     continue;
                 }
-                address.Add(addressModel);
+                if (isRetry)
+                {
+                    address.Add(addressModel);
+                }
+                else
+                {
+                    if (addressModel.IsHealth)
+                    {
+                        address.Add(addressModel);
+                    }
+                }
+
+
             }
 
             if (!address.Any())

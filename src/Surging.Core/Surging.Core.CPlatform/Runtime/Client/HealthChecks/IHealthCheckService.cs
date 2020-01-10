@@ -25,6 +25,11 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks
         /// <returns>健康返回true，否则返回false。</returns>
         ValueTask<bool> IsHealth(AddressModel address);
 
+        Task MarkServiceRouteUnHealth(string serviceId, AddressModel address);
+
+        Task MarkServiceRouteHealth(string serviceId, AddressModel address);
+
+
         /// <summary>
         /// 标记一个地址为失败的。
         /// </summary>

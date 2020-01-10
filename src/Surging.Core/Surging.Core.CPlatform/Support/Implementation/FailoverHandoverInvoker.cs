@@ -41,16 +41,24 @@ namespace Surging.Core.CPlatform.Support.Implementation
             {
                 message = await _breakeRemoteInvokeService.InvokeAsync(parameters, serviceId, _serviceKey, decodeJOject);
 
-                if (message != null && message.Result != null)
+                if (message != null)
                 {
-                    if (message.StatusCode != StatusCode.Success && time >= command.FailoverCluster)
+                    if (message.StatusCode == StatusCode.Success)
                     {
-                        throw new CPlatformException(message.ExceptionMessage, message.StatusCode);
+                        if (message.Result != null)
+                        {
+                            result = (T) _typeConvertibleService.Convert(message.Result, typeof(T));
+                        }
+                        else
+                        {
+                            result = default(T);
+                        }
                     }
-                    if (message.Result != null) 
+                    else if (message.IsSucceedRemoteInvokeCalled())
                     {
-                        result = (T)_typeConvertibleService.Convert(message.Result, typeof(T));
-                    }                    
+                        throw message.GetExceptionByStatusCode();
+                    }
+
                 }
             } while ((message == null || message.StatusCode == StatusCode.ServiceUnavailability) && ++time < command.FailoverCluster);
             return result;
@@ -64,15 +72,16 @@ namespace Surging.Core.CPlatform.Support.Implementation
             do
             {
                 message = await _breakeRemoteInvokeService.InvokeAsync(parameters, serviceId, _serviceKey, decodeJOject);
-                if (message != null && message.Result != null)
-                {
-                    if (message.StatusCode != StatusCode.Success && time >= command.FailoverCluster)
+                if (message != null)
+                {                  
+                    if (message.IsSucceedRemoteInvokeCalled())
                     {
-                        throw new CPlatformException(message.ExceptionMessage, message.StatusCode);
+                        throw message.GetExceptionByStatusCode();
                     }
                 }
             }
             while ((message == null || message.StatusCode == StatusCode.ServiceUnavailability) && ++time < command.FailoverCluster);
+
         }
 
         public async Task<object> Invoke(IDictionary<string, object> parameters, Type returnType, string serviceId, string _serviceKey, bool decodeJOject)
@@ -86,15 +95,22 @@ namespace Surging.Core.CPlatform.Support.Implementation
             {
                 message = await _breakeRemoteInvokeService.InvokeAsync(parameters, serviceId, _serviceKey, decodeJOject);
 
-                if (message != null && message.Result != null)
+                if (message != null)
                 {
-                    if (message.StatusCode != StatusCode.Success && time >= command.FailoverCluster)
+                    if (message.StatusCode == StatusCode.Success)
                     {
-                        throw new CPlatformException(message.ExceptionMessage, message.StatusCode);
+                        if (message.Result != null)
+                        {
+                            result = _typeConvertibleService.Convert(message.Result, returnType);
+                        }
+                        else
+                        {
+                            result = message.Result;
+                        }
                     }
-                    if (message.Result != null)
+                    else if (message.IsSucceedRemoteInvokeCalled()) 
                     {
-                        result = _typeConvertibleService.Convert(message.Result, returnType);
+                        throw message.GetExceptionByStatusCode();
                     }
                     
                 }

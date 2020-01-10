@@ -123,6 +123,18 @@ namespace Surging.Core.Consul
             }
         }
 
+        protected override async Task SetRouteAsync(ServiceRouteDescriptor route)
+        {
+            var clients = await _consulClientProvider.GetClients();
+            foreach (var client in clients)
+            {
+                var nodeData = _serializer.Serialize(route);
+                var keyValuePair = new KVPair($"{_configInfo.RoutePath}{route.ServiceDescriptor.Id}") { Value = nodeData };
+                await client.KV.Put(keyValuePair);
+            }
+        }
+
+
         public override async Task RemveAddressAsync(IEnumerable<AddressModel> Address)
         {
             var routes = await GetRoutesAsync(true);
@@ -130,7 +142,7 @@ namespace Surging.Core.Consul
             {
                 foreach (var route in routes)
                 {
-                    route.Address = route.Address.Except(Address);
+                    route.Address = route.Address.Except(Address).ToList();
                 }
                 _logger.LogDebug($"地址为{Address.Select(p => p.ToString()).JoinAsString(",")}的服务当前不健康,将会从服务列表中移除");
             }

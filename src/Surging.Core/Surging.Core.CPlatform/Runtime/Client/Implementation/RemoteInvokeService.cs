@@ -39,11 +39,11 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
             return await InvokeAsync(context, Task.Factory.CancellationToken);
         }
 
-        public async Task<RemoteInvokeResultMessage> InvokeAsync(RemoteInvokeContext context, CancellationToken cancellationToken)
+        public async Task<RemoteInvokeResultMessage> InvokeAsync(RemoteInvokeContext context, CancellationToken cancellationToken, bool isRetry = false)
         {
             var invokeMessage = context.InvokeMessage;
             AddressModel address = null;
-            var vt = ResolverAddress(context, context.Item);
+            var vt = ResolverAddress(context, context.Item, isRetry);
             address = vt.IsCompletedSuccessfully? vt.Result: await vt; 
             try
             {
@@ -57,20 +57,22 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
             catch (CommunicationException)
             {
                 await _healthCheckService.MarkFailure(address);
+                await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
                 throw;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, $"发起请求中发生了错误，服务Id：{invokeMessage.ServiceId}。");
+                await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
                 throw;
             }
         }
 
-        public async Task<RemoteInvokeResultMessage> InvokeAsync(RemoteInvokeContext context, int requestTimeout)
+        public async Task<RemoteInvokeResultMessage> InvokeAsync(RemoteInvokeContext context, int requestTimeout, bool isRetry = false)
         {
             var invokeMessage = context.InvokeMessage;
             AddressModel address = null;
-            var vt = ResolverAddress(context, context.Item);
+            var vt = ResolverAddress(context, context.Item, isRetry);
             address = vt.IsCompletedSuccessfully ? vt.Result : await vt;
             try
             {
@@ -88,16 +90,18 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
             catch (CommunicationException)
             {
                 await _healthCheckService.MarkFailure(address);
+                await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
                 throw;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, $"发起请求中发生了错误，服务Id：{invokeMessage.ServiceId}。错误信息：{exception.Message}");
+                await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
                 throw;
             }
         }
 
-        private async ValueTask<AddressModel> ResolverAddress(RemoteInvokeContext context,string item)
+        private async ValueTask<AddressModel> ResolverAddress(RemoteInvokeContext context, string item, bool isRetry = false)
         {
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
@@ -108,9 +112,9 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
             if (string.IsNullOrEmpty(context.InvokeMessage.ServiceId))
                 throw new ArgumentException("服务Id不能为空。", nameof(context.InvokeMessage.ServiceId));
             //远程调用信息
-            var invokeMessage = context.InvokeMessage; 
+            var invokeMessage = context.InvokeMessage;
             //解析服务地址
-            var vt =  _addressResolver.Resolver(invokeMessage.ServiceId, item);
+            var vt = _addressResolver.Resolver(invokeMessage.ServiceId, item, isRetry);
             var address = vt.IsCompletedSuccessfully ? vt.Result : await vt;
             if (address == null)
                 throw new CPlatformException($"无法解析服务Id：{invokeMessage.ServiceId}的地址信息。");

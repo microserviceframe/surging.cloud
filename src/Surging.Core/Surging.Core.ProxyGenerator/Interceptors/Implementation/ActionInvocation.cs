@@ -1,4 +1,5 @@
-﻿using Surging.Core.CPlatform.Messages;
+﻿using Surging.Core.CPlatform.Exceptions;
+using Surging.Core.CPlatform.Messages;
 using Surging.Core.ProxyGenerator.Implementation;
 using System;
 using System.Collections.Generic;
@@ -26,15 +27,22 @@ namespace Surging.Core.ProxyGenerator.Interceptors.Implementation
             try
             {
                 if (_returnValue == null)
-                    // _returnValue = await (Proxy as ServiceProxyBase).CallInvoke(this);
+                {
+                    var proceedResult = await (Proxy as ServiceProxyBase).CallInvoke(this);
                     _returnValue = new RemoteInvokeResultMessage()
                     {
-                        Result = await (Proxy as ServiceProxyBase).CallInvoke(this),
+                        Result = proceedResult,                        
                     };
+                }
             }
             catch (Exception ex)
             {
-                throw ex;
+                
+                _returnValue = new RemoteInvokeResultMessage()
+                {
+                    ExceptionMessage = ex.GetExceptionMessage(),
+                    StatusCode = ex.GetGetExceptionStatusCode()
+                };
             }
         }
     }

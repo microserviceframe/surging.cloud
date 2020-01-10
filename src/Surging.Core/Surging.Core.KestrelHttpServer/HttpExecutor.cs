@@ -112,7 +112,7 @@ namespace Surging.Core.KestrelHttpServer
             HttpResultMessage<object> resultMessage = new HttpResultMessage<object>();
             try {
                 var resultData = await _serviceProxyProvider.Invoke<object>(httpMessage.Parameters, httpMessage.RoutePath, httpMessage.ServiceKey);
-                resultMessage.Entity = HandleResultData(resultData);
+                resultMessage.Data = HandleResultData(resultData);
                 resultMessage.IsSucceed = true;
                 resultMessage.StatusCode = resultMessage.IsSucceed ? StatusCode.Success : StatusCode.RequestError;
             }
@@ -120,7 +120,7 @@ namespace Surging.Core.KestrelHttpServer
             {
                 if (_logger.IsEnabled(LogLevel.Error))
                     _logger.LogError(ex, "执行远程调用逻辑时候发生了错误。");
-                resultMessage = new HttpResultMessage<object> { Entity = null, Message = ex.GetExceptionMessage(), IsSucceed = false, StatusCode = ex.GetGetExceptionStatusCode() };
+                resultMessage = new HttpResultMessage<object> { Data = null, Message = ex.GetExceptionMessage(), IsSucceed = false, StatusCode = ex.GetGetExceptionStatusCode() };
             }
             return resultMessage;
         }
@@ -154,16 +154,16 @@ namespace Surging.Core.KestrelHttpServer
 
                 if (task == null)
                 {
-                    resultMessage.Entity = result;
+                    resultMessage.Data = result;
                 }
                 else
                 {
                     task.Wait();
                     var taskType = task.GetType().GetTypeInfo();
                     if (taskType.IsGenericType)
-                        resultMessage.Entity = taskType.GetProperty("Result").GetValue(task);
+                        resultMessage.Data = taskType.GetProperty("Result").GetValue(task);
                 }
-                resultMessage.IsSucceed = resultMessage.Entity != null;
+                resultMessage.IsSucceed = resultMessage.Data != null;
                 resultMessage.StatusCode = resultMessage.IsSucceed ? StatusCode.Success : StatusCode.RequestError;
             }
             catch (Exception exception)

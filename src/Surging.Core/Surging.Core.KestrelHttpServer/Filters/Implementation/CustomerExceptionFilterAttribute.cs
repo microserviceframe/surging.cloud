@@ -13,7 +13,7 @@ namespace Surging.Core.KestrelHttpServer.Filters.Implementation
         {
             context.Result = new HttpResultMessage<object>
             {
-                Entity = null,
+                Data = null,
                 StatusCode = context.Exception.GetGetExceptionStatusCode(),
                 IsSucceed = false,
                 Message = context.Exception.Message
