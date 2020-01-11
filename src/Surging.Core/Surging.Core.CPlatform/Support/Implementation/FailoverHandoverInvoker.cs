@@ -47,7 +47,7 @@ namespace Surging.Core.CPlatform.Support.Implementation
                     {
                         if (message.Result != null)
                         {
-                            result = (T) _typeConvertibleService.Convert(message.Result, typeof(T));
+                            result = (T)_typeConvertibleService.Convert(message.Result, typeof(T));
                         }
                         else
                         {
@@ -61,6 +61,14 @@ namespace Surging.Core.CPlatform.Support.Implementation
 
                 }
             } while ((message == null || message.StatusCode == StatusCode.ServiceUnavailability) && ++time < command.FailoverCluster);
+            if (message == null)
+            {
+                throw new CPlatformException($"{serviceId}远程服务调用失败,暂不存在可用的服务实例");
+            }
+            if (message.StatusCode != StatusCode.Success)
+            {
+                throw message.GetExceptionByStatusCode();
+            }
             return result;
         }
 
@@ -73,7 +81,7 @@ namespace Surging.Core.CPlatform.Support.Implementation
             {
                 message = await _breakeRemoteInvokeService.InvokeAsync(parameters, serviceId, _serviceKey, decodeJOject);
                 if (message != null)
-                {                  
+                {
                     if (message.IsSucceedRemoteInvokeCalled())
                     {
                         throw message.GetExceptionByStatusCode();
@@ -81,7 +89,14 @@ namespace Surging.Core.CPlatform.Support.Implementation
                 }
             }
             while ((message == null || message.StatusCode == StatusCode.ServiceUnavailability) && ++time < command.FailoverCluster);
-
+            if (message == null)
+            {
+                throw new CPlatformException($"{serviceId}远程服务调用失败,暂不存在可用的服务实例");
+            }
+            if (message.StatusCode != StatusCode.Success)
+            {
+                throw message.GetExceptionByStatusCode();
+            }
         }
 
         public async Task<object> Invoke(IDictionary<string, object> parameters, Type returnType, string serviceId, string _serviceKey, bool decodeJOject)
@@ -108,13 +123,23 @@ namespace Surging.Core.CPlatform.Support.Implementation
                             result = message.Result;
                         }
                     }
-                    else if (message.IsSucceedRemoteInvokeCalled()) 
+                    else if (message.IsSucceedRemoteInvokeCalled())
                     {
                         throw message.GetExceptionByStatusCode();
                     }
-                    
+
+
                 }
-            } while ((message == null || message.StatusCode == StatusCode.ServiceUnavailability) && ++time < command.FailoverCluster);
+            } while ((message == null || !message.IsSucceedRemoteInvokeCalled()) && ++time < command.FailoverCluster);
+
+            if (message == null)
+            {
+                throw new CPlatformException($"{serviceId}远程服务调用失败,暂不存在可用的服务实例");
+            }
+            if (message.StatusCode != StatusCode.Success)
+            {
+                throw message.GetExceptionByStatusCode();
+            }
             return result;
         }
     }

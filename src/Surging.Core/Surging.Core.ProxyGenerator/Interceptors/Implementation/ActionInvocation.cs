@@ -29,16 +29,17 @@ namespace Surging.Core.ProxyGenerator.Interceptors.Implementation
                 if (_returnValue == null)
                 {
                     var proceedResult = await (Proxy as ServiceProxyBase).CallInvoke(this);
-                    _returnValue = new RemoteInvokeResultMessage()
+                    _returnValue = proceedResult;
+                    _remoteInvokeResultMessage = new RemoteInvokeResultMessage()
                     {
-                        Result = proceedResult,                        
+                        Result = proceedResult,
                     };
                 }
             }
             catch (Exception ex)
             {
-                
-                _returnValue = new RemoteInvokeResultMessage()
+
+                _remoteInvokeResultMessage = new RemoteInvokeResultMessage()
                 {
                     ExceptionMessage = ex.GetExceptionMessage(),
                     StatusCode = ex.GetGetExceptionStatusCode()

@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Surging.Core.CPlatform.Messages;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Surging.Core.ProxyGenerator.Interceptors.Implementation
 {
-    public abstract class AbstractInvocation : IInvocation,ICacheInvocation
+    public abstract class AbstractInvocation : IInvocation, ICacheInvocation
     {
         private readonly IDictionary<string, object> _arguments;
         private readonly string _serviceId;
@@ -14,6 +15,7 @@ namespace Surging.Core.ProxyGenerator.Interceptors.Implementation
         private readonly Type _returnType;
         protected readonly object proxyObject;
         protected object _returnValue;
+        protected RemoteInvokeResultMessage _remoteInvokeResultMessage;
 
         protected AbstractInvocation(
           IDictionary<string, object> arguments,
@@ -42,6 +44,8 @@ namespace Surging.Core.ProxyGenerator.Interceptors.Implementation
         public List<Attribute> Attributes => _attributes;
 
         object IInvocation.ReturnValue { get => _returnValue; set => _returnValue = value; }
+
+        RemoteInvokeResultMessage IInvocation.RemoteInvokeResultMessage { get => _remoteInvokeResultMessage; set => _remoteInvokeResultMessage = value; }
 
         public Type ReturnType => _returnType;
 

@@ -24,7 +24,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
         private readonly ILogger<RemoteInvokeService> _logger;
         private readonly IHealthCheckService _healthCheckService;
 
-        public RemoteInvokeService(IHashAlgorithm hashAlgorithm,IAddressResolver addressResolver, ITransportClientFactory transportClientFactory, ILogger<RemoteInvokeService> logger, IHealthCheckService healthCheckService)
+        public RemoteInvokeService(IHashAlgorithm hashAlgorithm, IAddressResolver addressResolver, ITransportClientFactory transportClientFactory, ILogger<RemoteInvokeService> logger, IHealthCheckService healthCheckService)
         {
             _addressResolver = addressResolver;
             _transportClientFactory = transportClientFactory;
@@ -39,31 +39,39 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
             return await InvokeAsync(context, Task.Factory.CancellationToken);
         }
 
-        public async Task<RemoteInvokeResultMessage> InvokeAsync(RemoteInvokeContext context, CancellationToken cancellationToken, bool isRetry = false)
+        public async Task<RemoteInvokeResultMessage> InvokeAsync(RemoteInvokeContext context, CancellationToken cancellationToken)
         {
             var invokeMessage = context.InvokeMessage;
             AddressModel address = null;
-            var vt = ResolverAddress(context, context.Item, isRetry);
-            address = vt.IsCompletedSuccessfully? vt.Result: await vt; 
+
             try
             {
+                var vt = ResolverAddress(context, context.Item);
+                address = vt.IsCompletedSuccessfully ? vt.Result : await vt;
                 var endPoint = address.CreateEndPoint();
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug($"使用地址：'{endPoint}'进行调用。");
-                var client =await _transportClientFactory.CreateClientAsync(endPoint);
+                var client = await _transportClientFactory.CreateClientAsync(endPoint);
                 RpcContext.GetContext().SetAttachment("RemoteAddress", address.ToString());
-                return await client.SendAsync(invokeMessage,cancellationToken).WithCancellation(cancellationToken);
+                return await client.SendAsync(invokeMessage, cancellationToken).WithCancellation(cancellationToken);
             }
             catch (CommunicationException)
             {
-                await _healthCheckService.MarkFailure(address);
-                await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
+                if (address != null) 
+                {
+                    await _healthCheckService.MarkFailure(address);
+                    await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
+                }
+                    
                 throw;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, $"发起请求中发生了错误，服务Id：{invokeMessage.ServiceId}。");
-                await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
+                if (address != null) 
+                {
+                    await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
+                }
                 throw;
             }
         }
@@ -72,15 +80,16 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
         {
             var invokeMessage = context.InvokeMessage;
             AddressModel address = null;
-            var vt = ResolverAddress(context, context.Item, isRetry);
-            address = vt.IsCompletedSuccessfully ? vt.Result : await vt;
+
             try
             {
+                var vt = ResolverAddress(context, context.Item, isRetry);
+                address = vt.IsCompletedSuccessfully ? vt.Result : await vt;
                 var endPoint = address.CreateEndPoint();
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug($"使用地址：'{endPoint}'进行调用。");
                 var task = _transportClientFactory.CreateClientAsync(endPoint);
-                var client= task.IsCompletedSuccessfully ? task.Result : await task;
+                var client = task.IsCompletedSuccessfully ? task.Result : await task;
                 RpcContext.GetContext().SetAttachment("RemoteAddress", address.ToString());
                 using (var cts = new CancellationTokenSource())
                 {
@@ -89,14 +98,21 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
             }
             catch (CommunicationException)
             {
-                await _healthCheckService.MarkFailure(address);
-                await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
+                if (address != null)
+                {
+                    await _healthCheckService.MarkFailure(address);
+                    await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
+                }
+
                 throw;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, $"发起请求中发生了错误，服务Id：{invokeMessage.ServiceId}。错误信息：{exception.Message}");
-                await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
+                if (address != null)
+                {
+                    await _healthCheckService.MarkServiceRouteUnHealth(context.InvokeMessage.ServiceId, address);
+                }
                 throw;
             }
         }
