@@ -38,7 +38,7 @@ namespace Surging.Core.ProxyGenerator.Interceptors.Implementation
             }
             catch (Exception ex)
             {
-
+                _returnValue = null;
                 _remoteInvokeResultMessage = new RemoteInvokeResultMessage()
                 {
                     ExceptionMessage = ex.GetExceptionMessage(),

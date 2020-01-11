@@ -137,13 +137,14 @@ namespace Surging.Core.System.Intercept
                         var retrunValue = await cacheProvider.GetFromCacheFirst(l2cacheProvider, l2Key, key, async () =>
                         {
                             await invocation.Proceed();
-                            if (invocation.ReturnValue is RemoteInvokeResultMessage)
+                            var remoteInvokeResultMessage = invocation.RemoteInvokeResultMessage;
+                            if (remoteInvokeResultMessage.StatusCode == CPlatform.Exceptions.StatusCode.Success)
                             {
-                                return ((RemoteInvokeResultMessage)invocation.ReturnValue).Result;
+                                return remoteInvokeResultMessage.Result;
                             }
                             else
                             {
-                                return invocation.ReturnValue;
+                                throw remoteInvokeResultMessage.GetExceptionByStatusCode();
                             }
                         }, invocation.ReturnType, attribute.Time);
                         //invocation.ReturnValue = retrunValue;

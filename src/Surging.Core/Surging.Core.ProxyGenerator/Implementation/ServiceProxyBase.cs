@@ -171,9 +171,7 @@ namespace Surging.Core.ProxyGenerator.Implementation
         private async Task<Tuple<RemoteInvokeResultMessage, object>> Intercept(IInterceptor interceptor, IInvocation invocation)
         {
             await interceptor.Intercept(invocation);
-            var message = invocation.ReturnValue is RemoteInvokeResultMessage
-             ? invocation.ReturnValue as RemoteInvokeResultMessage : null;
-            return new Tuple<RemoteInvokeResultMessage, object>(message, invocation.ReturnValue);
+            return new Tuple<RemoteInvokeResultMessage, object>(invocation.RemoteInvokeResultMessage, invocation.ReturnValue);
         }
 
         private IInvocation GetInvocation(IDictionary<string, object> parameters, string serviceId, Type returnType)
