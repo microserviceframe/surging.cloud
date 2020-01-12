@@ -65,7 +65,8 @@ namespace Surging.Core.CPlatform.Support.Implementation
                 }
                 else
                 {
-                    return null;
+                    var breakeSeconds = Math.Round((command.BreakeSleepWindowInMilliseconds - intervalSeconds * 1000) / 1000, 0);
+                    return new RemoteInvokeResultMessage() { ExceptionMessage = $"服务{serviceId}-{serviceKey}当前不可用,请稍后{breakeSeconds}s后重试,请检查您的输入参数是否正确", StatusCode = StatusCode.ServiceUnavailability };
                 }
                 
             }
@@ -138,16 +139,21 @@ namespace Surging.Core.CPlatform.Support.Implementation
                     return v;
                 });
                 await ExecuteExceptionFilter(ex, invokeMessage, token);
-                if (ex is BusinessException || ex.InnerException is BusinessException) {
+                if (ex.InnerException != null && ex.InnerException is BusinessException) {
                     return new RemoteInvokeResultMessage()
                     {
-                        ExceptionMessage = ex.GetExceptionMessage(),
+                        ExceptionMessage = ex.InnerException.GetExceptionMessage(),
                         Result = null,
-                        StatusCode = ex.GetGetExceptionStatusCode()
+                        StatusCode = ex.InnerException.GetGetExceptionStatusCode()
                     };
                 }
 
-                return null;
+                return new RemoteInvokeResultMessage()
+                {
+                    ExceptionMessage = ex.GetExceptionMessage(),
+                    Result = null,
+                    StatusCode = ex.GetGetExceptionStatusCode()
+                };
             }
         }
 
