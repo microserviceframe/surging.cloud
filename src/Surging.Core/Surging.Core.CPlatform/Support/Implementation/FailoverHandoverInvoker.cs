@@ -60,7 +60,7 @@ namespace Surging.Core.CPlatform.Support.Implementation
                     }
 
                 }
-            } while ((message == null || message.StatusCode == StatusCode.ServiceUnavailability) && ++time < command.FailoverCluster);
+            } while ((message == null || !message.IsSucceedRemoteInvokeCalled()) && ++time < command.FailoverCluster);
             if (message == null)
             {
                 throw new CPlatformException($"{serviceId}远程服务调用失败,暂不存在可用的服务实例");
@@ -88,7 +88,7 @@ namespace Surging.Core.CPlatform.Support.Implementation
                     }
                 }
             }
-            while ((message == null || message.StatusCode == StatusCode.ServiceUnavailability) && ++time < command.FailoverCluster);
+            while ((message == null || !message.IsSucceedRemoteInvokeCalled()) && ++time < command.FailoverCluster);
             if (message == null)
             {
                 throw new CPlatformException($"{serviceId}远程服务调用失败,暂不存在可用的服务实例");
@@ -127,7 +127,6 @@ namespace Surging.Core.CPlatform.Support.Implementation
                     {
                         throw message.GetExceptionByStatusCode();
                     }
-
 
                 }
             } while ((message == null || !message.IsSucceedRemoteInvokeCalled()) && ++time < command.FailoverCluster);
