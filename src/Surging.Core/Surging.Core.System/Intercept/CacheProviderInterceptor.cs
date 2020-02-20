@@ -35,17 +35,17 @@ namespace Surging.Core.System.Intercept
                         attribute.Key = attribute.Key.Replace("{userId}", loginUser.UserId.Value.ToString());
                     }
                 }
-                if (attribute.CorrespondingKeys != null && attribute.CorrespondingKeys.Any(p => p.Contains("{userId}", StringComparison.OrdinalIgnoreCase)))
+                if (attribute.CorrespondingKeys != null && attribute.CorrespondingKeys.Any(p => p.Contains("{userId}", StringComparison.OrdinalIgnoreCase))) 
                 {
                     var loginUser = NullSurgingSession.Instance;
 
-                    for (var i = 0; i < attribute.CorrespondingKeys.Length; i++)
+                    for (var i = 0; i < attribute.CorrespondingKeys.Length; i++) 
                     {
                         if (loginUser == null || !loginUser.UserId.HasValue)
                         {
                             attribute.CorrespondingKeys[i] = attribute.CorrespondingKeys[i].Replace("{userId}", "*", StringComparison.OrdinalIgnoreCase);
                         }
-                        else
+                        else 
                         {
                             attribute.CorrespondingKeys[i] = attribute.CorrespondingKeys[i].Replace("{userId}", loginUser.UserId.Value.ToString(), StringComparison.OrdinalIgnoreCase);
                         }
@@ -96,7 +96,7 @@ namespace Surging.Core.System.Intercept
             {
                 case CachingMethod.Get:
                     {
-
+                        
                         var retrunValue = await cacheProvider.GetFromCacheFirst(key, async () =>
                         {
                             await invocation.Proceed();
@@ -135,18 +135,19 @@ namespace Surging.Core.System.Intercept
                 case CachingMethod.Get:
                     {
                         var retrunValue = await cacheProvider.GetFromCacheFirst(l2cacheProvider, l2Key, key, async () =>
-                        {
-                            await invocation.Proceed();
-                            var remoteInvokeResultMessage = invocation.RemoteInvokeResultMessage;
-                            if (remoteInvokeResultMessage.StatusCode == CPlatform.Exceptions.StatusCode.Success)
-                            {
-                                return remoteInvokeResultMessage.Result;
-                            }
-                            else
-                            {
-                                throw remoteInvokeResultMessage.GetExceptionByStatusCode();
-                            }
-                        }, invocation.ReturnType, attribute.Time);
+                         {
+                             await invocation.Proceed();
+                             var remoteInvokeResultMessage = invocation.RemoteInvokeResultMessage;
+                             if (remoteInvokeResultMessage.StatusCode == CPlatform.Exceptions.StatusCode.Success)
+                             {
+                                 return remoteInvokeResultMessage.Result;
+                             }
+                             else 
+                             {
+                                 throw remoteInvokeResultMessage.GetExceptionByStatusCode();
+                             }
+
+                         }, invocation.ReturnType, attribute.Time);
                         //invocation.ReturnValue = retrunValue;
                         break;
                     }

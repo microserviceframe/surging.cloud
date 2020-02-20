@@ -1,4 +1,5 @@
 ﻿using Surging.Core.CPlatform.Address;
+using Surging.Core.CPlatform.Routing;
 using Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation;
 using System;
 using System.Threading.Tasks;
@@ -25,17 +26,17 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks
         /// <returns>健康返回true，否则返回false。</returns>
         ValueTask<bool> IsHealth(AddressModel address);
 
-        Task MarkServiceRouteUnHealth(string serviceId, AddressModel address);
-
-        Task MarkServiceRouteHealth(string serviceId, AddressModel address);
-
-
         /// <summary>
         /// 标记一个地址为失败的。
         /// </summary>
         /// <param name="address">地址模型。</param>
         /// <returns>一个任务。</returns>
         Task MarkFailure(AddressModel address);
+
+        Task MarkServiceRouteUnHealth(string serviceId,AddressModel address);
+
+        Task MarkServiceRouteHealth(string serviceId, AddressModel address);
+
 
         event EventHandler<HealthCheckEventArgs> Removed;
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Surging.Core.CPlatform.Address;
 using Surging.Core.CPlatform.Exceptions;
 using Surging.Core.CPlatform.HashAlgorithms;

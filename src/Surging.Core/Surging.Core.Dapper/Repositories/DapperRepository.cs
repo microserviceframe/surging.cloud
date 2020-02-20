@@ -61,7 +61,6 @@ namespace Surging.Core.Dapper.Repositories
                     using (var trans = conn.BeginTransaction())
                     {
                         _creationActionFilter.ExecuteFilter(entity);
-
                         conn.Insert<TEntity>(entity, trans);
                         if (isUserSearchElasitcModule)
                         {
@@ -72,8 +71,9 @@ namespace Surging.Core.Dapper.Repositories
                             }
                         }
                         trans.Commit();
-                        return Task.CompletedTask;
                     }
+                    conn.Close();
+                    return Task.CompletedTask;
                 }
 
             }
@@ -101,7 +101,8 @@ namespace Surging.Core.Dapper.Repositories
                     {
 
                         _creationActionFilter.ExecuteFilter(entity);
-                        conn.Insert(entity,trans);
+                      
+                        conn.Insert(entity, trans);
                         if (isUserSearchElasitcModule)
                         {
                             if (!_creationElasitcFilter.ExecuteFilter(entity))
@@ -111,8 +112,10 @@ namespace Surging.Core.Dapper.Repositories
                             }
                         }
                         trans.Commit();
-                        return Task.FromResult(entity.Id);
+
                     }
+                    conn.Close();
+                    return Task.FromResult(entity.Id);
                 }
             }
             catch (Exception ex)
@@ -214,7 +217,7 @@ namespace Surging.Core.Dapper.Repositories
                         }
                         else
                         {
-                            conn.Delete(entity,trans);
+                            conn.Delete(entity, trans);
                         }
                         if (isUserSearchElasitcModule)
                         {
@@ -226,6 +229,7 @@ namespace Surging.Core.Dapper.Repositories
                         }
                         trans.Commit();
                     }
+                    conn.Close();
                     return Task.CompletedTask;
                 }
             }
@@ -246,17 +250,21 @@ namespace Surging.Core.Dapper.Repositories
             IEnumerable<TEntity> items = await GetAllAsync(predicate);
             using (var conn = GetDbConnection())
             {
-                conn.Open();
-                using (var trans = conn.BeginTransaction()) 
+                if (conn.State != System.Data.ConnectionState.Open)
+                {
+                    conn.Open();
+                }
+                using (var trans = conn.BeginTransaction())
                 {
                     foreach (TEntity entity in items)
                     {
-                        await DeleteAsync(entity,conn,trans);
+                        await DeleteAsync(entity, conn, trans);
                     }
                     trans.Commit();
                 }
+                conn.Close();
             }
-            
+
 
         }
 
@@ -270,7 +278,7 @@ namespace Surging.Core.Dapper.Repositories
                     using (var trans = conn.BeginTransaction())
                     {
                         _modificationActionFilter.ExecuteFilter(entity);
-                        conn.Update(entity,trans);
+                        conn.Update(entity, trans);
                         if (isUserSearchElasitcModule)
                         {
                             if (!_modificationElasitcFilter.ExecuteFilter(entity))
@@ -280,8 +288,10 @@ namespace Surging.Core.Dapper.Repositories
                             }
                         }
                         trans.Commit();
-                        return Task.CompletedTask;
+
                     }
+                    conn.Close();
+                    return Task.CompletedTask;
                 }
             }
             catch (Exception ex)
@@ -301,9 +311,12 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
+                    conn.Open();
                     predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
                     var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
-                    return Task.FromResult(conn.GetList<TEntity>(pg).FirstOrDefault());
+                    var result = conn.GetList<TEntity>(pg).FirstOrDefault();
+                    conn.Close();
+                    return Task.FromResult(result);
                 }
             }
             catch (Exception ex)
@@ -323,9 +336,11 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
+                    conn.Open();
                     predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
                     var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
-                    return Task.FromResult(conn.GetList<TEntity>(pg).First());
+                    var result = conn.GetList<TEntity>(pg).First();
+                    return Task.FromResult(result);
                 }
             }
             catch (Exception ex)
@@ -346,9 +361,12 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
+                    conn.Open();
                     predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
                     var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
-                    return Task.FromResult(conn.GetList<TEntity>(pg).Single());
+                    var result = conn.GetList<TEntity>(pg).Single();
+                    conn.Close();
+                    return Task.FromResult(result);
                 }
             }
             catch (Exception ex)
@@ -369,9 +387,12 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
+                    conn.Open();
                     predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
                     var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
-                    return Task.FromResult(conn.GetList<TEntity>(pg).SingleOrDefault());
+                    var result = conn.GetList<TEntity>(pg).SingleOrDefault();
+                    conn.Close();
+                    return Task.FromResult(result);
                 }
             }
             catch (Exception ex)
@@ -397,9 +418,11 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
+                    conn.Open();
                     var predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>();
                     var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
                     var list = conn.GetList<TEntity>(pg);
+                    conn.Close();
                     return Task.FromResult(list);
                 }
             }
@@ -420,9 +443,11 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
+                    conn.Open();
                     predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
                     var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
                     var list = conn.GetList<TEntity>(pg);
+                    conn.Close();
                     return Task.FromResult(list);
                 }
             }
@@ -438,7 +463,7 @@ namespace Surging.Core.Dapper.Repositories
         }
 
 
-        public Task<IEnumerable<TEntity>> QueryAsync(string query, object parameters = null)
+        public async Task<IEnumerable<TEntity>> QueryAsync(string query, object parameters = null)
         {
             if (string.IsNullOrEmpty(query))
             {
@@ -449,7 +474,10 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
-                    return conn.QueryAsync<TEntity>(query, parameters);
+                    conn.Open();
+                    var result = await conn.QueryAsync<TEntity>(query, parameters);
+                    conn.Close();
+                    return result;
                 }
             }
             catch (Exception ex)
@@ -464,7 +492,7 @@ namespace Surging.Core.Dapper.Repositories
 
         }
 
-        public Task<IEnumerable<TAny>> Query<TAny>(string query, object parameters = null) where TAny : class
+        public async Task<IEnumerable<TAny>> Query<TAny>(string query, object parameters = null) where TAny : class
         {
             if (string.IsNullOrEmpty(query))
             {
@@ -475,7 +503,10 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
-                    return conn.QueryAsync<TAny>(query, parameters);
+                    conn.Open();
+                    var result = await conn.QueryAsync<TAny>(query, parameters);
+                    conn.Close();
+                    return result;
                 }
             }
             catch (Exception ex)
@@ -673,7 +704,7 @@ namespace Surging.Core.Dapper.Repositories
                         throw new DataAccessException("elasticsearch server error", _deletionElasitcFilter.ElasticException);
                     }
                 }
-               
+
                 return Task.CompletedTask;
 
             }
@@ -717,9 +748,11 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
+                    conn.Open();
                     var predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>();
                     var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
                     var count = conn.Count<TEntity>(pg);
+                    conn.Close();
                     return count;
                 }
             }
@@ -740,9 +773,11 @@ namespace Surging.Core.Dapper.Repositories
             {
                 using (var conn = GetDbConnection())
                 {
+                    conn.Open();
                     predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
                     var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
                     var count = conn.Count<TEntity>(pg);
+                    conn.Close();
                     return count;
                 }
             }
@@ -863,5 +898,139 @@ namespace Surging.Core.Dapper.Repositories
             return GetPageAsync(index, count, null);
         }
 
+        public Task<int> GetCountAsync(DbConnection conn, DbTransaction trans)
+        {
+            try
+            {
+
+                var predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>();
+                var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+                var count = conn.Count<TEntity>(pg, transaction: trans);
+                return Task.FromResult(count);
+            }
+            catch (Exception ex)
+            {
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex.Message, ex);
+                }
+
+                throw new DataAccessException(ex.Message, ex);
+            }
+        }
+
+        public Task<TEntity> SingleAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans)
+        {
+            predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
+            var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+            var result = conn.GetList<TEntity>(pg, transaction: trans).Single();
+            return Task.FromResult(result);
+        }
+
+        public Task<TEntity> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans)
+        {
+            predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
+            var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+            var result = conn.GetList<TEntity>(pg, transaction: trans).SingleOrDefault();
+            return Task.FromResult(result);
+        }
+
+        public Task<TEntity> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans)
+        {
+            predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
+            var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+            var result = conn.GetList<TEntity>(pg, transaction: trans).FirstOrDefault();
+            return Task.FromResult(result);
+        }
+
+        public Task<TEntity> FirstAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans)
+        {
+            predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
+            var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+            var result = conn.GetList<TEntity>(pg, transaction: trans).FirstOrDefault();
+            return Task.FromResult(result);
+        }
+
+        public Task<TEntity> GetAsync(TPrimaryKey id, DbConnection conn, DbTransaction trans)
+        {
+            return SingleAsync(CreateEqualityExpressionForId(id), conn, trans);
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans)
+        {
+            predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>(predicate);
+            var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+            var list = conn.GetList<TEntity>(pg, transaction: trans);
+            return Task.FromResult(list);
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllAsync(DbConnection conn, DbTransaction trans)
+        {
+            var predicate = _softDeleteQueryFilter.ExecuteFilter<TEntity, TPrimaryKey>();
+            var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+            var list = conn.GetList<TEntity>(pg, transaction: trans);
+            return Task.FromResult(list);
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllIncludeSoftDeleteAsync(Expression<Func<TEntity, bool>> predicate)
+        {
+            try
+            {
+                using (var conn = GetDbConnection())
+                {
+                    conn.Open();
+                    var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+                    var list = conn.GetList<TEntity>(pg);
+                    conn.Close();
+                    return Task.FromResult(list);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex.Message, ex);
+                }
+
+                throw new DataAccessException(ex.Message, ex);
+            }
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllIncludeSoftDeleteAsync()
+        {
+            try
+            {
+                using (var conn = GetDbConnection())
+                {
+                    conn.Open();
+                    var list = conn.GetList<TEntity>();
+                    conn.Close();
+                    return Task.FromResult(list);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex.Message, ex);
+                }
+
+                throw new DataAccessException(ex.Message, ex);
+            }
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllIncludeSoftDeleteAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans)
+        {
+
+            var pg = predicate.ToPredicateGroup<TEntity, TPrimaryKey>();
+            var list = conn.GetList<TEntity>(pg, transaction: trans);
+            return Task.FromResult(list);
+        }
+
+        public Task<IEnumerable<TEntity>> GetAllIncludeSoftDeleteAsync(DbConnection conn, DbTransaction trans)
+        {
+            var list = conn.GetList<TEntity>();
+            return Task.FromResult(list);
+        }
     }
 }

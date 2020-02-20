@@ -91,8 +91,22 @@ namespace Surging.Core.KestrelHttpServer
 
             if (context.Request.HasFormContentType)
             {
-                var collection = await GetFormCollection(context.Request);
-                httpMessage.Parameters.Add("form", collection);
+                if (context.Request.ContentType == "multipart/form-data")
+                {
+                    var collection = await GetFormCollection(context.Request);
+                    httpMessage.Parameters.Add("form", collection);
+                }
+                else 
+                {
+                    var formData = new Dictionary<string, object>();
+                    foreach (var item in context.Request.Form.Keys) 
+                    {
+                        formData.Add(item, context.Request.Form[item]);
+                    }
+                    
+                    httpMessage.Parameters.Add("form", formData);
+                }
+               
                 if (!await OnActionExecuting(new ActionExecutingContext { Context = context, Route = serviceRoute, Message = httpMessage }, 
                     sender, messageId, actionFilters)) return;
                 httpMessage.Attachments = RpcContext.GetContext().GetContextParameters();

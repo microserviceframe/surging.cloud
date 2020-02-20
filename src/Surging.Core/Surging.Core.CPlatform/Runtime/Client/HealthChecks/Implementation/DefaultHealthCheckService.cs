@@ -146,25 +146,25 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
         {
             var ipAddress = address as IpAddressModel;
             var serviceRoute = await _serviceRouteManager.GetAsync(serviceId);
-            if (serviceRoute == null)
+            if (serviceRoute == null) 
             {
                 throw new CPlatformException($"不存在Id为{serviceId}的路由信息");
             }
             var checkedServiceRoute = serviceRoute.Address.SingleOrDefault(p => ((IpAddressModel)p).Ip == ipAddress.Ip && ((IpAddressModel)p).Port == ipAddress.Port);
-            if (checkedServiceRoute != null)
+            if (checkedServiceRoute != null) 
             {
                 if (checkedServiceRoute.UnhealthyTimes >= AppConfig.ServerOptions.UnhealthyTimes)
                 {
                     serviceRoute.Address.Remove(checkedServiceRoute);
                 }
-                else
+                else 
                 {
                     checkedServiceRoute.IsHealth = false;
                     checkedServiceRoute.UnhealthyTimes += 1;
-                }
+                }              
                 await _serviceRouteManager.SetRouteAsync(serviceRoute);
             }
-
+           
         }
 
         public async Task MarkServiceRouteHealth(string serviceId, AddressModel address)
@@ -178,7 +178,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
             var checkedServiceRoute = serviceRoute.Address.SingleOrDefault(p => ((IpAddressModel)p).Ip == ipAddress.Ip && ((IpAddressModel)p).Port == ipAddress.Port);
             if (checkedServiceRoute != null)
             {
-                if (!checkedServiceRoute.IsHealth)
+                if (!checkedServiceRoute.IsHealth) 
                 {
                     checkedServiceRoute.IsHealth = true;
                     checkedServiceRoute.UnhealthyTimes = 0;
@@ -186,7 +186,6 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                 }
             }
         }
-
 
         protected void OnRemoved(params HealthCheckEventArgs[] args)
         {

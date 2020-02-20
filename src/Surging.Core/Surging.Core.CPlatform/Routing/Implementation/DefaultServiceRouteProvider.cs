@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Surging.Core.CPlatform.Routing;
-using Surging.Core.CPlatform.Routing.Implementation;
 using Surging.Core.CPlatform.Runtime.Server;
 using Surging.Core.CPlatform.Transport.Implementation;
 using Surging.Core.CPlatform.Utilities;
@@ -8,7 +6,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -16,13 +13,11 @@ namespace Surging.Core.CPlatform.Routing.Implementation
 {
     public class DefaultServiceRouteProvider : IServiceRouteProvider
     {
-        private readonly ConcurrentDictionary<string, ServiceRoute> _concurrent =
-       new ConcurrentDictionary<string, ServiceRoute>();
+        private readonly ConcurrentDictionary<string, ServiceRoute> _concurrent = new ConcurrentDictionary<string, ServiceRoute>();
 
         private readonly List<ServiceRoute> _localRoutes = new List<ServiceRoute>();
 
-        private readonly ConcurrentDictionary<string, ServiceRoute> _serviceRoute =
-       new ConcurrentDictionary<string, ServiceRoute>();
+        private readonly ConcurrentDictionary<string, ServiceRoute> _serviceRoute = new ConcurrentDictionary<string, ServiceRoute>();
 
         private readonly IServiceEntryManager _serviceEntryManager;
         private readonly ILogger<DefaultServiceRouteProvider> _logger;

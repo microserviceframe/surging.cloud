@@ -1,8 +1,6 @@
-﻿using Nest;
-using Surging.Core.CPlatform.Runtime.Session;
+﻿using Surging.Core.CPlatform.Runtime.Session;
 using Surging.Core.Domain.Entities;
 using Surging.Core.Domain.Entities.Auditing;
-using Surging.Core.ElasticSearch;
 using System;
 
 namespace Surging.Core.Dapper.Filters.Action
@@ -20,9 +18,8 @@ namespace Surging.Core.Dapper.Filters.Action
                 }
                 if (typeof(IDeletionAudited).IsAssignableFrom(entity.GetType()))
                 {
-                    var loginUser = NullSurgingSession.Instance;
                     ((IDeletionAudited)entity).DeletionTime = DateTime.Now;
-                    ((IDeletionAudited)entity).DeleterUserId = loginUser.UserId;
+                    ((IDeletionAudited)entity).DeleterUserId = _loginUser.UserId;
                 }
             }
         }

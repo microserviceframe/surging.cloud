@@ -1,7 +1,7 @@
-﻿using Nest;
+﻿using Microsoft.Extensions.Logging;
+using Surging.Core.CPlatform.Runtime.Session;
 using Surging.Core.CPlatform.Utilities;
 using Surging.Core.Domain.Entities;
-using Surging.Core.ElasticSearch.Provider;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
@@ -13,7 +13,13 @@ namespace Surging.Core.Dapper.Filters.Action
     {
         protected const int Normal = 0;
         protected const int IsDeleted = 1;
-
+        protected readonly ILogger<DapperActionFilterBase> _logger;
+        protected readonly ISurgingSession _loginUser;
+        public DapperActionFilterBase()
+        {
+            _logger = ServiceLocator.GetService<ILogger<DapperActionFilterBase>>();
+            _loginUser = NullSurgingSession.Instance;
+        }
 
         protected virtual void CheckAndSetId(object entityAsObj)
         {

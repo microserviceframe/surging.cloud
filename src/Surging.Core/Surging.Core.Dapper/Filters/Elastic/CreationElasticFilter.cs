@@ -1,5 +1,4 @@
 ﻿using System;
-using Nest;
 using Surging.Core.Domain.Entities;
 
 namespace Surging.Core.Dapper.Filters.Elastic

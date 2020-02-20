@@ -5,7 +5,7 @@ namespace Surging.Core.CPlatform.Messages
 {
     public static class RemoteInvokeResultMessageExtensions
     {
-        public static bool IsSucceedRemoteInvokeCalled(this RemoteInvokeResultMessage message) 
+        public static bool IsSucceedRemoteInvokeCalled(this RemoteInvokeResultMessage message)
         {
             return message.StatusCode == StatusCode.Success
                 || message.StatusCode == StatusCode.ValidateError
@@ -14,11 +14,11 @@ namespace Surging.Core.CPlatform.Messages
                 || message.StatusCode == StatusCode.UnAuthentication
                 || message.StatusCode == StatusCode.UnAuthorized
                 || message.StatusCode == StatusCode.DataAccessError
-                
+
                 ;
         }
 
-        public static Exception GetExceptionByStatusCode(this RemoteInvokeResultMessage message) 
+        public static Exception GetExceptionByStatusCode(this RemoteInvokeResultMessage message)
         {
             Exception exception = null;
             switch (message.StatusCode)
@@ -53,9 +53,9 @@ namespace Surging.Core.CPlatform.Messages
                     exception = new CPlatformException(message.ExceptionMessage, message.StatusCode);
                     break;
             }
-            
+
             return exception;
         }
     }
-    
+
 }

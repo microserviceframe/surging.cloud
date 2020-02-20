@@ -125,8 +125,6 @@ namespace Surging.Core.CPlatform.Routing.Implementation
             };
             return SetRouteAsync(descriptor);
         }
-
-
         public abstract Task RemveAddressAsync(IEnumerable<AddressModel> Address);
 
         /// <summary>
@@ -145,6 +143,7 @@ namespace Surging.Core.CPlatform.Routing.Implementation
         protected abstract Task SetRoutesAsync(IEnumerable<ServiceRouteDescriptor> routes);
 
         protected abstract Task SetRouteAsync(ServiceRouteDescriptor route);
+
 
         protected void OnCreated(params ServiceRouteEventArgs[] args)
         {
@@ -172,5 +171,7 @@ namespace Surging.Core.CPlatform.Routing.Implementation
             foreach (var arg in args)
                 _removed(this, arg);
         }
+
+        
     }
 }

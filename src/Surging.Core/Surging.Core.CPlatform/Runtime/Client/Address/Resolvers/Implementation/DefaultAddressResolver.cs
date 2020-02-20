@@ -108,15 +108,14 @@ namespace Surging.Core.CPlatform.Runtime.Client.Address.Resolvers.Implementation
                 {
                     address.Add(addressModel);
                 }
-                else
+                else 
                 {
-                    if (addressModel.IsHealth)
+                    if (addressModel.IsHealth) 
                     {
                         address.Add(addressModel);
                     }
                 }
-
-
+                
             }
 
             if (!address.Any())

@@ -44,6 +44,8 @@ namespace Surging.Core.Dapper.Repositories
 
         Task<int> GetCountAsync();
 
+        Task<int> GetCountAsync(DbConnection conn, DbTransaction trans);
+
         Task<TEntity> SingleAsync(Expression<Func<TEntity, bool>> predicate);
 
         Task<TEntity> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate);
@@ -57,6 +59,28 @@ namespace Surging.Core.Dapper.Repositories
         Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate);
 
         Task<IEnumerable<TEntity>> GetAllAsync();
+
+        Task<TEntity> SingleAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans);
+
+        Task<TEntity> SingleOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans);
+
+        Task<TEntity> FirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans);
+
+        Task<TEntity> FirstAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans);
+
+        Task<TEntity> GetAsync(TPrimaryKey id, DbConnection conn, DbTransaction trans);
+
+        Task<IEnumerable<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans);
+
+        Task<IEnumerable<TEntity>> GetAllAsync(DbConnection conn, DbTransaction trans);
+
+        Task<IEnumerable<TEntity>> GetAllIncludeSoftDeleteAsync(Expression<Func<TEntity, bool>> predicate);
+
+        Task<IEnumerable<TEntity>> GetAllIncludeSoftDeleteAsync();
+
+        Task<IEnumerable<TEntity>> GetAllIncludeSoftDeleteAsync(Expression<Func<TEntity, bool>> predicate, DbConnection conn, DbTransaction trans);
+
+        Task<IEnumerable<TEntity>> GetAllIncludeSoftDeleteAsync(DbConnection conn, DbTransaction trans);
 
         Task<IEnumerable<TEntity>> QueryAsync(string query, object parameters = null);
 

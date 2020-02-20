@@ -11,12 +11,11 @@ namespace Surging.Core.Dapper.Filters.Action
     {
         public void ExecuteFilter(TEntity entity)
         {
-            var loginUser = NullSurgingSession.Instance;
-            if (typeof(IModificationAudited).IsAssignableFrom(typeof(TEntity)) && loginUser != null)
+            if (typeof(IModificationAudited).IsAssignableFrom(typeof(TEntity)) && _loginUser != null)
             {
 
                 var record = entity as IModificationAudited;
-                record.LastModifierUserId = loginUser.UserId;
+                record.LastModifierUserId = _loginUser.UserId;
                 record.LastModificationTime = DateTime.Now;
 
             }

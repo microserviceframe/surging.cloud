@@ -39,7 +39,7 @@ namespace Surging.Core.CPlatform.Routing.Implementation
 
             routes.AddRange(descriptors.Select(descriptor => new ServiceRoute
             {
-
+               
                 Address = CreateAddress(descriptor.AddressDescriptors).ToList(),
                 ServiceDescriptor = descriptor.ServiceDescriptor
             }));
