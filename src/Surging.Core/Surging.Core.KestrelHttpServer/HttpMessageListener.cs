@@ -30,7 +30,7 @@ namespace Surging.Core.KestrelHttpServer
         private readonly ISerializer<string> _serializer;
         private event RequestDelegate Requested;
         private readonly IServiceRouteProvider _serviceRouteProvider;
-        private readonly string[] _serviceKeys = {  "serviceKey", "servicekey"};
+        private readonly string[] _serviceKeys = { "serviceKey", "servicekey" };
 
         public HttpMessageListener(ILogger<HttpMessageListener> logger, ISerializer<string> serializer, IServiceRouteProvider serviceRouteProvider)
         {
@@ -46,13 +46,13 @@ namespace Surging.Core.KestrelHttpServer
             await Received(sender, message);
         }
 
-        public async Task OnReceived(IMessageSender sender,string messageId, HttpContext context, IEnumerable<IActionFilter> actionFilters)
+        public async Task OnReceived(IMessageSender sender, string messageId, HttpContext context, IEnumerable<IActionFilter> actionFilters)
         {
             var serviceRoute = context.Items["route"] as ServiceRoute;
 
             var path = (context.Items["path"]
                 ?? HttpUtility.UrlDecode(GetRoutePath(context.Request.Path.ToString()))) as string;
-           
+
             if (serviceRoute == null)
             {
                 var route = await _serviceRouteProvider.GetRouteByPathOrRegexPath(path);
@@ -96,21 +96,21 @@ namespace Surging.Core.KestrelHttpServer
                     var collection = await GetFormCollection(context.Request);
                     httpMessage.Parameters.Add("form", collection);
                 }
-                else 
+                else
                 {
                     var formData = new Dictionary<string, object>();
-                    foreach (var item in context.Request.Form.Keys) 
+                    foreach (var item in context.Request.Form.Keys)
                     {
                         formData.Add(item, context.Request.Form[item]);
                     }
-                    
+
                     httpMessage.Parameters.Add("form", formData);
                 }
-               
-                if (!await OnActionExecuting(new ActionExecutingContext { Context = context, Route = serviceRoute, Message = httpMessage }, 
+
+                if (!await OnActionExecuting(new ActionExecutingContext { Context = context, Route = serviceRoute, Message = httpMessage },
                     sender, messageId, actionFilters)) return;
-                httpMessage.Attachments = RpcContext.GetContext().GetContextParameters();
-                await Received(sender, new TransportMessage(messageId,httpMessage));
+                httpMessage.Attachments = GetHttpMessageAttachments(context);
+                await Received(sender, new TransportMessage(messageId, httpMessage));
             }
             else
             {
@@ -122,30 +122,45 @@ namespace Surging.Core.KestrelHttpServer
                     foreach (var param in bodyParams)
                         httpMessage.Parameters.Add(param.Key, param.Value);
                     if (!await OnActionExecuting(new ActionExecutingContext { Context = context, Route = serviceRoute, Message = httpMessage },
-                       sender,  messageId, actionFilters)) return;
-                    httpMessage.Attachments = RpcContext.GetContext().GetContextParameters();
-                    await Received(sender, new TransportMessage(messageId,httpMessage));
+                       sender, messageId, actionFilters)) return;
+                    httpMessage.Attachments = GetHttpMessageAttachments(context);
+                    await Received(sender, new TransportMessage(messageId, httpMessage));
                 }
                 else
                 {
-                    if (!await OnActionExecuting(new ActionExecutingContext { Context = context, Route = serviceRoute, Message = httpMessage }, 
+                    if (!await OnActionExecuting(new ActionExecutingContext { Context = context, Route = serviceRoute, Message = httpMessage },
                         sender, messageId, actionFilters)) return;
-                    httpMessage.Attachments = RpcContext.GetContext().GetContextParameters();
-                    await Received(sender, new TransportMessage(messageId,httpMessage));
+                    httpMessage.Attachments = GetHttpMessageAttachments(context);
+                    await Received(sender, new TransportMessage(messageId, httpMessage));
                 }
             }
-          
+
+
+
             await OnActionExecuted(context, httpMessage, actionFilters);
+        }
+
+        private IDictionary<string, object> GetHttpMessageAttachments(HttpContext context)
+        {
+            var httpMessageAttachments = RpcContext.GetContext().GetContextParameters();
+            if (context.User.Claims != null && context.User.Claims.Any())
+            {
+                foreach (var claims in context.User.Claims)
+                {
+                    httpMessageAttachments.Add(claims.Type, claims.Value);
+                }
+            }
+            return httpMessageAttachments;
         }
 
         public async Task<bool> OnActionExecuting(ActionExecutingContext filterContext, IMessageSender sender, string messageId, IEnumerable<IActionFilter> filters)
         {
             foreach (var fiter in filters)
-            { 
-                await fiter.OnActionExecuting(filterContext); 
+            {
+                await fiter.OnActionExecuting(filterContext);
                 if (filterContext.Result != null)
                 {
-                    await sender.SendAndFlushAsync(new TransportMessage(messageId,filterContext.Result));
+                    await sender.SendAndFlushAsync(new TransportMessage(messageId, filterContext.Result));
                     return false;
                 }
             }
@@ -165,7 +180,7 @@ namespace Surging.Core.KestrelHttpServer
             }
         }
 
-        public async Task<bool> OnAuthorization(HttpContext context, HttpServerMessageSender sender,string messageId, IEnumerable<IAuthorizationFilter> filters)
+        public async Task<bool> OnAuthorization(HttpContext context, HttpServerMessageSender sender, string messageId, IEnumerable<IAuthorizationFilter> filters)
         {
             foreach (var filter in filters)
             {
@@ -185,7 +200,7 @@ namespace Surging.Core.KestrelHttpServer
                 await filter.OnAuthorization(filterContext);
                 if (filterContext.Result != null)
                 {
-                    await sender.SendAndFlushAsync(new TransportMessage(messageId,filterContext.Result));
+                    await sender.SendAndFlushAsync(new TransportMessage(messageId, filterContext.Result));
                     return false;
                 }
             }
@@ -215,7 +230,7 @@ namespace Surging.Core.KestrelHttpServer
 
         private async Task<HttpFormCollection> GetFormCollection(HttpRequest request)
         {
-            var boundary = GetName("boundary=", request.ContentType); 
+            var boundary = GetName("boundary=", request.ContentType);
             var reader = new MultipartReader(boundary, request.Body);
             var collection = await GetMultipartForm(reader);
             var fileCollection = new HttpFormFileCollection();
@@ -234,44 +249,44 @@ namespace Surging.Core.KestrelHttpServer
 
                 }
             }
-           return new HttpFormCollection(fields, fileCollection);
+            return new HttpFormCollection(fields, fileCollection);
         }
 
-        private async Task<IDictionary<string,object>> GetMultipartForm(MultipartReader reader)
+        private async Task<IDictionary<string, object>> GetMultipartForm(MultipartReader reader)
         {
-           var section = await reader.ReadNextSectionAsync();
+            var section = await reader.ReadNextSectionAsync();
             var collection = new Dictionary<string, object>();
             if (section != null)
-            { 
-                var name=GetName("name=",section.ContentDisposition);
-                var fileName = GetName("filename=",section.ContentDisposition);
+            {
+                var name = GetName("name=", section.ContentDisposition);
+                var fileName = GetName("filename=", section.ContentDisposition);
                 var buffer = new MemoryStream();
                 await section.Body.CopyToAsync(buffer);
-                if(string.IsNullOrEmpty(fileName))
+                if (string.IsNullOrEmpty(fileName))
                 {
                     var fields = new Dictionary<string, StringValues>();
                     StreamReader streamReader = new StreamReader(buffer);
-                    fields.Add(name, new StringValues(UTF8Encoding.Default.GetString(buffer.GetBuffer(),0,(int)buffer.Length)));
+                    fields.Add(name, new StringValues(UTF8Encoding.Default.GetString(buffer.GetBuffer(), 0, (int)buffer.Length)));
                     collection.Add(name, fields);
                 }
                 else
                 {
                     var fileCollection = new HttpFormFileCollection();
                     StreamReader streamReader = new StreamReader(buffer);
-                    fileCollection.Add(new HttpFormFile(buffer.Length,name,fileName,buffer.GetBuffer()));
+                    fileCollection.Add(new HttpFormFile(buffer.Length, name, fileName, buffer.GetBuffer()));
                     collection.Add(name, fileCollection);
                 }
-                var formCollection= await GetMultipartForm(reader);
-                foreach(var item in formCollection)
+                var formCollection = await GetMultipartForm(reader);
+                foreach (var item in formCollection)
                 {
                     if (!collection.ContainsKey(item.Key))
-                        collection.Add(item.Key,item.Value);
+                        collection.Add(item.Key, item.Value);
                 }
             }
             return collection;
         }
 
-        private string GetName(string type,string content)
+        private string GetName(string type, string content)
         {
             var elements = content.Split(';');
             var element = elements.Where(entry => entry.Trim().StartsWith(type)).FirstOrDefault()?.Trim();
@@ -302,4 +317,5 @@ namespace Surging.Core.KestrelHttpServer
             return routePath;
         }
     }
+
 }

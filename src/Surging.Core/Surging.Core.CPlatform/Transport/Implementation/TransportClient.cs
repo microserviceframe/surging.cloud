@@ -233,7 +233,7 @@ namespace Surging.Core.CPlatform.Transport.Implementation
                 RpcContext.GetContext().GetAttachment("RemoteAddress")?.ToString()));
             }
             var parameters = RpcContext.GetContext().GetContextParameters();
-            parameters.TryRemove("RemoteAddress", out object value);
+            //parameters.TryRemove("RemoteAddress", out object value);
             RpcContext.GetContext().SetContextParameters(parameters);
         }
 
