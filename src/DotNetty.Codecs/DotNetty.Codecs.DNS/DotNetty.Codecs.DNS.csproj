@@ -1,22 +1,22 @@
-﻿﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup Label="NuGet">
-    <TargetFrameworks>netstandard1.3</TargetFrameworks>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard1.3' ">1.6.1</NetStandardImplicitPackageVersion>
-  </PropertyGroup>
+	<PropertyGroup Label="NuGet">
+		<TargetFrameworks>netstandard1.3</TargetFrameworks>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard1.3' ">1.6.1</NetStandardImplicitPackageVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="DotNetty.Codecs" Version="0.6.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="DotNetty.Codecs" Version="0.6.0" />
+	</ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' ">
-    <PackageReference Include="System.Net.Security" Version="4.3.2" />
-    <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
-    <PackageReference Include="System.Globalization.Extensions" Version="4.3.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' ">
+		<PackageReference Include="System.Net.Security" Version="4.3.2" />
+		<PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
+		<PackageReference Include="System.Globalization.Extensions" Version="4.3.0" />
+	</ItemGroup>
+	<ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+		<Reference Include="System" />
+		<Reference Include="Microsoft.CSharp" />
+	</ItemGroup>
 </Project>
