@@ -121,12 +121,11 @@ namespace Surging.Core.ApiGateWay.OAuth
                 payload = Encoding.UTF8.GetString(Convert.FromBase64String(jwtToken[1]));
             }
             var payloadObject = JsonConvert.DeserializeObject(payload);
-            if (payloadObject is string)
+            if (payloadObject is string) 
             {
                 return JsonConvert.DeserializeObject(payloadObject.ToString());
             }
             return payloadObject;
-
         }
     }
 }

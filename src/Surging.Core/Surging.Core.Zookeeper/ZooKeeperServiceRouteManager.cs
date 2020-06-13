@@ -14,6 +14,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -141,15 +142,6 @@ namespace Surging.Core.Zookeeper
             }
         }
 
-        public override async Task RemveAddressAsync(IEnumerable<AddressModel> Address)
-        {
-            var routes = await GetRoutesAsync(true);
-            foreach (var route in routes)
-            {
-                route.Address = route.Address.Except(Address).ToList();
-            }
-            await base.SetRoutesAsync(routes);
-        }
         protected override async Task SetRouteAsync(ServiceRouteDescriptor route)
         {
             if (_logger.IsEnabled(LogLevel.Information))
@@ -186,6 +178,68 @@ namespace Surging.Core.Zookeeper
                     _logger.LogInformation("服务路由添加成功。");
             }
 
+        }
+
+        public override async Task RemveAddressAsync(IEnumerable<AddressModel> Address)
+        {
+            var routes = await GetRoutesAsync(true);
+            foreach (var route in routes)
+            {
+                route.Address = route.Address.Except(Address).ToList();
+            }
+            await base.SetRoutesAsync(routes);
+        }
+
+        public override async Task<ServiceRoute> GetRouteByPathAsync(string path)
+        {
+            var route = await GetRouteByPathFormCacheAsync(path);
+            if (route == null && !_mapRoutePathOptions.Any(p => p.TargetRoutePath == path))
+            {
+                await EnterRoutes();
+                return await GetRouteByPathFormCacheAsync(path);
+            }
+            return route;
+        }
+
+        private async Task<ServiceRoute> GetRouteByPathFormCacheAsync(string path)
+        {
+            if (_routes != null && _routes.Any(p => p.ServiceDescriptor.RoutePath == path))
+            {
+                return _routes.First(p => p.ServiceDescriptor.RoutePath == path);
+            }
+            return await GetRouteByRegexPathAsync(path);
+           
+        }
+
+        private async Task<ServiceRoute> GetRouteByRegexPathAsync(string path)
+        {
+            var pattern = "/{.*?}";
+            var route = _routes.FirstOrDefault(i =>
+            {
+                var routePath = Regex.Replace(i.ServiceDescriptor.RoutePath, pattern, "");
+                var newPath = path.Replace(routePath, "");
+                return (newPath.StartsWith("/") || newPath.Length == 0) && i.ServiceDescriptor.RoutePath.Split("/").Length == path.Split("/").Length && !i.ServiceDescriptor.GetMetadata<bool>("IsOverload")
+                ;
+            });
+
+
+            if (route == null)
+            {
+                if (_logger.IsEnabled(LogLevel.Warning))
+                    _logger.LogWarning($"根据服务路由路径：{path}，找不到相关服务信息。");
+            }
+            return route;
+        }
+
+
+        public override async Task<ServiceRoute> GetRouteByServiceIdAsync(string serviceId)
+        {
+            if (_routes != null && _routes.Any(p => p.ServiceDescriptor.Id == serviceId))
+            {
+                return _routes.First(p => p.ServiceDescriptor.Id == serviceId);
+            }
+            await EnterRoutes(true);
+            return _routes.FirstOrDefault(p => p.ServiceDescriptor.Id == serviceId);
         }
 
         public override async Task SetRoutesAsync(IEnumerable<ServiceRoute> routes)

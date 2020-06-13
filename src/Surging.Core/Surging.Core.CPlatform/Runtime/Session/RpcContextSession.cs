@@ -15,7 +15,7 @@ namespace Surging.Core.CPlatform.Runtime.Session
             get
             {
                 var userId = RpcContext.GetContext().GetAttachment("userId");
-                if (userId != null)
+                if (userId != null) 
                 {
                     return Convert.ToInt64(userId);
                 }
@@ -28,7 +28,7 @@ namespace Surging.Core.CPlatform.Runtime.Session
             get
             {
                 var userName = RpcContext.GetContext().GetAttachment("userName");
-                if (userName != null)
+                if (userName != null) 
                 {
                     return userName.ToString();
                 }
@@ -36,5 +36,4 @@ namespace Surging.Core.CPlatform.Runtime.Session
             }
         }
     }
-
 }

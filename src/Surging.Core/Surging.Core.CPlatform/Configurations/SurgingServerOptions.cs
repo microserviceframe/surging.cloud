@@ -17,15 +17,21 @@ namespace Surging.Core.CPlatform.Configurations
 
         public bool IsModulePerLifetimeScope { get; set; }
 
-        public double WatchInterval { get; set; } = 20d;
+        public int WatchInterval { get; set; } = 20;
+
+        public int ServiceRouteWatchIntervalInMinutes { get; set; } = 5;
 
         public int DisconnTimeInterval { get; set; } = 60;
+
+        public int HealthCheckWatchIntervalInSeconds { get; set; } = 10;
+
+        public int AllowServerUnhealthyTimes { get; set; } = 5;
 
         public bool Libuv { get; set; } = false;
 
         public int SoBacklog { get; set; } = 8192;
 
-        public bool EnableRouteWatch { get; set; }
+        public bool EnableRouteWatch { get; set; } = true;
 
         public IPEndPoint IpEndpoint { get; set; }
 
@@ -60,8 +66,7 @@ namespace Surging.Core.CPlatform.Configurations
 
         public int CompensationRegisterRoutesCount { get; set; } = 2;
 
-        public int HealthCheckTimeout { get; set; } = 1000;
+        public int HealthCheckTimeout { get; set; } = 20;
 
-        public int UnhealthyTimes { get; set; } = 6;
     }
 }

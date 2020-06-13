@@ -1,8 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Surging.Core.ApiGateWay;
-using Surging.Core.ApiGateWay.OAuth;
+﻿using Surging.Core.ApiGateWay.OAuth;
 using Surging.Core.CPlatform;
-using Surging.Core.CPlatform.DependencyResolution;
 using Surging.Core.CPlatform.Filters.Implementation;
 using Surging.Core.CPlatform.Messages;
 using Surging.Core.CPlatform.Transport.Implementation;
@@ -13,8 +10,6 @@ using System.Threading.Tasks;
 using Autofac;
 using System;
 using Surging.Core.ProxyGenerator;
-using System.IO;
-using Surging.Core.CPlatform.Serialization;
 using System.Collections.Generic;
 using Surging.Core.CPlatform.Routing;
 using System.Linq;
@@ -40,7 +35,7 @@ namespace Surging.Core.Stage.Filters
         public async Task OnAuthorization(AuthorizationFilterContext filterContext)
         {
             var gatewayAppConfig = AppConfig.Options.ApiGetWay;
-
+           
             if (filterContext.Route != null && filterContext.Route.ServiceDescriptor.DisableNetwork())
             {
                 var actionName = filterContext.Route.ServiceDescriptor.GroupName().IsNullOrEmpty() ? filterContext.Route.ServiceDescriptor.RoutePath : filterContext.Route.ServiceDescriptor.GroupName();
@@ -69,17 +64,17 @@ namespace Surging.Core.Stage.Filters
                             var userId = payload.userId ?? payload.UserId;
                             var userName = payload.userName ?? payload.UserName;
                             var claimsIdentity = new ClaimsIdentity();
-                            if (userId != null)
+                            if (userId != null) 
                             {
-                                claimsIdentity.AddClaim(new Claim("userId", userId.ToString()));
+                                claimsIdentity.AddClaim(new Claim("userId",userId.ToString()));
                             }
-                            if (userName != null)
+                            if (userName != null) 
                             {
                                 claimsIdentity.AddClaim(new Claim("userName", userName.ToString()));
                             }
                             filterContext.Context.User = new ClaimsPrincipal(claimsIdentity);
 
-                            if (!gatewayAppConfig.AuthorizationRoutePath.IsNullOrEmpty() && filterContext.Route.ServiceDescriptor.EnableAuthorization())
+                             if (!gatewayAppConfig.AuthorizationRoutePath.IsNullOrEmpty() && filterContext.Route.ServiceDescriptor.EnableAuthorization())
                             {
                                 var rpcParams = new Dictionary<string, object>() {
                                         {  "serviceId", filterContext.Route.ServiceDescriptor.Id }
@@ -107,21 +102,21 @@ namespace Surging.Core.Stage.Filters
                         }
 
                     }
-                    else
+                    else 
                     {
                         if (filterContext.Route.ServiceDescriptor.EnableAuthorization())
                         {
                             filterContext.Result = new HttpResultMessage<object> { IsSucceed = false, StatusCode = CPlatform.Exceptions.StatusCode.UnAuthentication, Message = $"暂不支持{filterContext.Route.ServiceDescriptor.AuthType()}类型的身份认证方式" };
                         }
                     }
-
+                    
                 }
             }
 
-            if (string.Compare(filterContext.Path.ToLower(), gatewayAppConfig.TokenEndpointPath, true) == 0)
+            if (String.Compare(filterContext.Path.ToLower(), gatewayAppConfig.TokenEndpointPath, true) == 0)
             {
                 filterContext.Context.Items.Add("path", gatewayAppConfig.AuthenticationRoutePath);
-            }
+            }           
         }
     }
 }

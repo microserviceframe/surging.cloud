@@ -16,8 +16,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Surging.Core.Consul
 {
@@ -123,17 +125,61 @@ namespace Surging.Core.Consul
             }
         }
 
-        protected override async Task SetRouteAsync(ServiceRouteDescriptor route)
+        public override async Task<ServiceRoute> GetRouteByPathAsync(string path)
         {
-            var clients = await _consulClientProvider.GetClients();
-            foreach (var client in clients)
+            var route = await GetRouteByPathFormCacheAsync(path);
+            if (route == null && !_mapRoutePathOptions.Any(p=>p.TargetRoutePath == path))
             {
-                var nodeData = _serializer.Serialize(route);
-                var keyValuePair = new KVPair($"{_configInfo.RoutePath}{route.ServiceDescriptor.Id}") { Value = nodeData };
-                await client.KV.Put(keyValuePair);
-            }
+                await EnterRoutes();
+                return await GetRouteByPathFormCacheAsync(path);
+            }            
+            return route;
         }
 
+        private async Task<ServiceRoute> GetRouteByPathFormCacheAsync(string path)
+        {
+            if (_routes != null && _routes.Any(p => p.ServiceDescriptor.RoutePath == path))
+            {
+                return _routes.First(p => p.ServiceDescriptor.RoutePath == path);
+            }
+            return await GetRouteByRegexPathAsync(path);
+
+        }
+
+        private async Task<ServiceRoute> GetRouteByRegexPathAsync(string path)
+        {
+            var pattern = "/{.*?}";
+            if (_routes != null)
+            {
+                var route = _routes.FirstOrDefault(i =>
+                {
+                    var routePath = Regex.Replace(i.ServiceDescriptor.RoutePath, pattern, "");
+                    var newPath = path.Replace(routePath, "");
+                    return (newPath.StartsWith("/") || newPath.Length == 0) && i.ServiceDescriptor.RoutePath.Split("/").Length == path.Split("/").Length;
+
+                });
+
+
+                if (route == null)
+                {
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                        _logger.LogWarning($"根据服务路由路径：{path}，找不到相关服务信息。");
+                }
+                return route;
+            }
+            return null;
+
+
+        }
+        public override async Task<ServiceRoute> GetRouteByServiceIdAsync(string serviceId)
+        {
+            if (_routes != null && _routes.Any(p => p.ServiceDescriptor.Id == serviceId))
+            {
+                return _routes.First(p => p.ServiceDescriptor.Id == serviceId);
+            }
+            await EnterRoutes(true);
+            return _routes.FirstOrDefault(p => p.ServiceDescriptor.Id == serviceId);
+        }
 
         public override async Task RemveAddressAsync(IEnumerable<AddressModel> Address)
         {
@@ -144,7 +190,7 @@ namespace Surging.Core.Consul
                 {
                     route.Address = route.Address.Except(Address).ToList();
                 }
-                _logger.LogDebug($"地址为{Address.Select(p => p.ToString()).JoinAsString(",")}的服务当前不健康,将会从服务列表中移除");
+                _logger.LogInformation($"地址为{Address.Select(p => p.ToString()).JoinAsString(",")}的服务当前不健康,将会从服务列表中移除");
             }
             catch (Exception ex)
             {
@@ -164,6 +210,17 @@ namespace Surging.Core.Consul
                     var keyValuePair = new KVPair($"{_configInfo.RoutePath}{serviceRoute.ServiceDescriptor.Id}") { Value = nodeData };
                     await client.KV.Put(keyValuePair);
                 }
+            }
+        }
+
+        protected override async Task SetRouteAsync(ServiceRouteDescriptor route)
+        {
+            var clients = await _consulClientProvider.GetClients();
+            foreach (var client in clients)
+            {
+                var nodeData = _serializer.Serialize(route);
+                var keyValuePair = new KVPair($"{_configInfo.RoutePath}{route.ServiceDescriptor.Id}") { Value = nodeData };
+                await client.KV.Put(keyValuePair);
             }
         }
 
@@ -332,7 +389,7 @@ namespace Surging.Core.Consul
             {
                 //创建子监控类
                 var watcher = new ChildrenMonitorWatcher(GetConsulClient, _manager, _configInfo.RoutePath,
-             async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens),
+                async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens),
                (result) => ConvertPaths(result).Result);
                 //对委托绑定方法
                 action = currentData => watcher.SetCurrentData(currentData);

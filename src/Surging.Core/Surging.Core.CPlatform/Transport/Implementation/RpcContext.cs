@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Surging.Core.CPlatform.Transport.Implementation
 {
+
     public class RpcContext
     {
         private ConcurrentDictionary<string, object> contextParameters;
@@ -31,13 +30,14 @@ namespace Surging.Core.CPlatform.Transport.Implementation
 
         public void SetContextParameters(IDictionary<string, object> contextParameters)
         {
-            foreach (var item in contextParameters)
+            foreach (var item in contextParameters) 
             {
                 SetAttachment(item.Key, item.Value);
             }
-
+           
         }
 
+       
 
         public static RpcContext GetContext()
         {

@@ -25,7 +25,7 @@ using Surging.Core.CPlatform.Serialization;
 
 namespace Surging.Core.KestrelHttpServer
 {
-    public class HttpExecutor : IServiceExecutor
+    public  class HttpExecutor : IServiceExecutor
     {
         #region Field
         private readonly IServiceEntryLocate _serviceEntryLocate;
@@ -87,13 +87,13 @@ namespace Surging.Core.KestrelHttpServer
                 _logger.LogError(exception, "将接收到的消息反序列化成 TransportMessage<httpMessage> 时发送了错误。");
                 return;
             }
-
+           
             WirteDiagnosticBefore(message);
             var entry = _serviceEntryLocate.Locate(httpMessage);
 
             HttpResultMessage<object> httpResultMessage = new HttpResultMessage<object>() { };
 
-            if (entry != null && _serviceProvider.IsRegisteredWithKey(httpMessage.ServiceKey, entry.Type))
+            if (entry!=null && _serviceProvider.IsRegisteredWithKey(httpMessage.ServiceKey, entry.Type))
             {
                 //执行本地代码。
                 httpResultMessage = await LocalExecuteAsync(entry, httpMessage);
@@ -102,9 +102,9 @@ namespace Surging.Core.KestrelHttpServer
             {
                 httpResultMessage = await RemoteExecuteAsync(httpMessage);
             }
-            await SendRemoteInvokeResult(sender, message.Id, httpResultMessage);
+            await SendRemoteInvokeResult(sender,message.Id, httpResultMessage);
         }
-
+        
 
         #endregion Implementation of IServiceExecutor
 
@@ -113,8 +113,7 @@ namespace Surging.Core.KestrelHttpServer
         private async Task<HttpResultMessage<object>> RemoteExecuteAsync(HttpMessage httpMessage)
         {
             HttpResultMessage<object> resultMessage = new HttpResultMessage<object>();
-            try
-            {
+            try {
                 var resultData = await _serviceProxyProvider.Invoke<object>(httpMessage.Parameters, httpMessage.RoutePath, httpMessage.ServiceKey);
                 resultMessage.Data = HandleResultData(resultData);
                 resultMessage.IsSucceed = true;
@@ -131,17 +130,15 @@ namespace Surging.Core.KestrelHttpServer
 
         private object HandleResultData(object resultData)
         {
-            if (resultData == null || resultData == "null")
+            if ( resultData == null || resultData == "null")
             {
                 return null;
             }
 
-            if (resultData.GetType() == typeof(string))
-            {
+            if (resultData.GetType() == typeof(string)) {
                 var resultDataStr = (string)resultData;
-
-                if (resultDataStr.IsValidJson())
-                {
+               
+                if (resultDataStr.IsValidJson()) {
                     var dataObj = _serializer.Deserialize(resultDataStr, typeof(object), true);
                     return dataObj;
                 }
@@ -176,20 +173,20 @@ namespace Surging.Core.KestrelHttpServer
             {
                 if (_logger.IsEnabled(LogLevel.Error))
                     _logger.LogError(exception, "执行本地逻辑时候发生了错误。");
-                resultMessage.Message = exception.GetExceptionMessage();
+                resultMessage.Message =  exception.GetExceptionMessage();
                 resultMessage.StatusCode = exception.GetGetExceptionStatusCode();
             }
             return resultMessage;
         }
 
-        private async Task SendRemoteInvokeResult(IMessageSender sender, string messageId, HttpResultMessage resultMessage)
+        private async Task SendRemoteInvokeResult(IMessageSender sender,string messageId, HttpResultMessage resultMessage)
         {
             try
             {
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug("准备发送响应消息。");
 
-                await sender.SendAndFlushAsync(new TransportMessage(messageId, resultMessage));
+                await sender.SendAndFlushAsync(new TransportMessage(messageId,resultMessage));
 
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug("响应消息发送成功。");
@@ -244,3 +241,4 @@ namespace Surging.Core.KestrelHttpServer
 
     }
 }
+
