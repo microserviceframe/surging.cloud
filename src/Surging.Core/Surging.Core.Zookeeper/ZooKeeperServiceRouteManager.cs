@@ -195,7 +195,7 @@ namespace Surging.Core.Zookeeper
             var route = await GetRouteByPathFormCacheAsync(path);
             if (route == null && !_mapRoutePathOptions.Any(p => p.TargetRoutePath == path))
             {
-                await EnterRoutes();
+                await EnterRoutes(true);
                 return await GetRouteByPathFormCacheAsync(path);
             }
             return route;
