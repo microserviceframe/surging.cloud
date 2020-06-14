@@ -1,5 +1,5 @@
 Param(
-  [parameter(Mandatory=$false)][string]$repo="https://api.nuget.org/v3/index.json",
+  [parameter(Mandatory=$false)][string]$repo="github",
   [parameter(Mandatory=$false)][bool]$push=$false,
   [parameter(Mandatory=$false)][string]$apikey,
   [parameter(Mandatory=$false)][bool]$build=$true
@@ -61,7 +61,10 @@ if ($build) {
 if($push) {
     if ([string]::IsNullOrEmpty($apikey)){
         Write-Warning -Message "未设置nuget仓库的APIKEY"
-		exit 1
+		dotnet nuget push *.nupkg -s $repo --skip-duplicate
+		
+	}else{
+	   dotnet nuget push *.nupkg -s $repo -k $apikey --skip-duplicate
 	}
-	dotnet nuget push *.nupkg -s $repo -k $apikey --skip-duplicate
+	
 }

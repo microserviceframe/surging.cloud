@@ -16,7 +16,7 @@ services:
       SwaggerTitle: "surging.sample.server"
       SwaggerDes: "server api docs"
       SupportName: "liuhongliang"
-      SupportEmail: "liuhongliang@jingshonline.com"
+      SupportEmail: "liuhongliang@surging.cloud.com"
       EnableAuthorization: ${ENABLE_AUTHORIZATION:-false}
     ports:
       - "18088:8080"
@@ -36,7 +36,7 @@ services:
       SwaggerTitle: "surging.sample.server2"
       SwaggerDes: "server api docs"
       SupportName: "liuhongliang"
-      SupportEmail: "liuhongliang@jingshonline.com"
+      SupportEmail: "liuhongliang@surging.cloud.com"
       EnableAuthorization: ${ENABLE_AUTHORIZATION:-false}
     ports:
       - "18089:8080"
@@ -54,5 +54,5 @@ services:
       SwaggerTitle: "surging.sample.client"
       SwaggerDes: "surging.sample.client相关API文档"
       SupportName: "liuhongliang"
-      SupportEmail: "liuhongliang@jingshonline.com"
+      SupportEmail: "liuhongliang@surging.cloud.com"
       EnableAuthorization: ${ENABLE_AUTHORIZATION:-false}
