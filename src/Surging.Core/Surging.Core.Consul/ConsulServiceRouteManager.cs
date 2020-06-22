@@ -207,6 +207,8 @@ namespace Surging.Core.Consul
                 foreach (var serviceRoute in routes)
                 {
                     var nodeData = _serializer.Serialize(serviceRoute);
+                    if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
+                        _logger.LogDebug($"准备设置服务路由信息：{Encoding.UTF8.GetString(nodeData)}。");
                     var keyValuePair = new KVPair($"{_configInfo.RoutePath}{serviceRoute.ServiceDescriptor.Id}") { Value = nodeData };
                     await client.KV.Put(keyValuePair);
                 }
@@ -219,6 +221,8 @@ namespace Surging.Core.Consul
             foreach (var client in clients)
             {
                 var nodeData = _serializer.Serialize(route);
+                if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
+                    _logger.LogDebug($"准备设置服务路由信息：{Encoding.UTF8.GetString(nodeData)}。");
                 var keyValuePair = new KVPair($"{_configInfo.RoutePath}{route.ServiceDescriptor.Id}") { Value = nodeData };
                 await client.KV.Put(keyValuePair);
             }

@@ -152,7 +152,10 @@ namespace Surging.Core.CPlatform.Routing.Implementation
                 fileStream.SetLength(0);
                 using (var writer = new StreamWriter(fileStream, Encoding.UTF8))
                 {
-                    await writer.WriteAsync(_serializer.Serialize(routes));
+                    var nodeData = _serializer.Serialize(routes);
+                    if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
+                        _logger.LogDebug($"准备设置服务路由信息：{nodeData}。");
+                    await writer.WriteAsync(nodeData);
                 }
             }
         }
