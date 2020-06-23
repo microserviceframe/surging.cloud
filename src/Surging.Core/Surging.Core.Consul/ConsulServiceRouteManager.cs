@@ -297,7 +297,6 @@ namespace Surging.Core.Consul
                     }
 
                 }
-
             }
             return result;
         }

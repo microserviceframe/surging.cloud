@@ -9,7 +9,7 @@ namespace Surging.Core.Consul.Internal
 {
     public  interface IConsulClientProvider
     {
-         Task<ConsulClient> GetClient();
+        Task<ConsulClient> GetClient();
 
         Task<IEnumerable<ConsulClient>> GetClients();
 

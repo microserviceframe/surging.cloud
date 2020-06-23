@@ -104,7 +104,7 @@ namespace Surging.Core.Consul
                     var nodeData = _serializer.Serialize(cacheDescriptor);
                     var keyValuePair = new KVPair($"{_configInfo.CachePath}{cacheDescriptor.CacheDescriptor.Id}") { Value = nodeData };
                     await client.KV.Put(keyValuePair);
-                }
+                }                
             }
         }
 
@@ -145,6 +145,7 @@ namespace Surging.Core.Consul
                     result = await GetCache(data);
                 }
             }
+
             return result;
         }
 
