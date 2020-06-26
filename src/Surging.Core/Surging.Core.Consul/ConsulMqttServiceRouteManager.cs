@@ -151,11 +151,9 @@ namespace Surging.Core.Consul
                 foreach (var serviceRoute in routes)
                 {
                     var key = $"{_configInfo.MqttRoutePath}{serviceRoute.MqttDescriptor.Topic}";
-                    var locker = client.CreateLock(key);
                     var nodeData = _serializer.Serialize(serviceRoute);
                     var keyValuePair = new KVPair(key) { Value = nodeData };
-                    await client.KV.Put(keyValuePair,await locker.Acquire());
-                    await locker.Destroy();
+                    await client.KV.Put(keyValuePair);
                 }
             }
         }

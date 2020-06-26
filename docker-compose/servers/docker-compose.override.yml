@@ -18,8 +18,6 @@ services:
       SupportName: "liuhongliang"
       SupportEmail: "liuhongliang@surging.cloud.com"
       EnableAuthorization: ${ENABLE_AUTHORIZATION:-false}
-    ports:
-      - "18088:8080"
 
   surging.sample.server2:
     environment:

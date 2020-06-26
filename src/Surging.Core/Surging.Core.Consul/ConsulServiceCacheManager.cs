@@ -102,13 +102,12 @@ namespace Surging.Core.Consul
                 foreach (var cacheDescriptor in cacheDescriptors)
                 {
                     var key = $"{_configInfo.CachePath}{cacheDescriptor.CacheDescriptor.Id}";
-                    var locker = client.CreateLock(key);
                     var nodeData = _serializer.Serialize(cacheDescriptor);
                     var keyValuePair = new KVPair(key) { Value = nodeData };
-                    await client.KV.Put(keyValuePair,
-                        await locker.Acquire());
-                    await locker.Destroy();
+                    await client.KV.Put(keyValuePair);
+                   
                 }
+                
             }
         }
 

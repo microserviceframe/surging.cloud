@@ -195,17 +195,15 @@ namespace Surging.Core.Consul
         {
             var clients = await _consulClientProvider.GetClients();
             foreach (var client in clients)
-            {                
+            {
                 foreach (var serviceRoute in routes)
                 {
-                    var key = $"{_configInfo.RoutePath}{serviceRoute.ServiceDescriptor.Id}";
-                    var locker = client.CreateLock(key);                    
+                    var key = $"{_configInfo.RoutePath}{serviceRoute.ServiceDescriptor.Id}";                                      
                     var nodeData = _serializer.Serialize(serviceRoute);
                     if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
                         _logger.LogDebug($"准备设置服务路由信息：{Encoding.UTF8.GetString(nodeData)}。");
                     var keyValuePair = new KVPair(key) { Value = nodeData };
-                    await client.KV.Put(keyValuePair, await locker.Acquire());
-                    await locker.Destroy();
+                    await client.KV.Put(keyValuePair);
                 }
             }
         }
