@@ -81,19 +81,26 @@ namespace Surging.Core.Consul
             {
                 if (_subscribers != null)
                 {
+                  
                     var oldSubscriberIds = _subscribers.Select(i => i.ServiceDescriptor.Id).ToArray();
                     var newSubscriberIds = subscribers.Select(i => i.ServiceDescriptor.Id).ToArray();
                     var deletedSubscriberIds = oldSubscriberIds.Except(newSubscriberIds).ToArray();
                     foreach (var deletedSubscriberId in deletedSubscriberIds)
                     {
-                        await client.KV.Delete($"{_configInfo.SubscriberPath}{deletedSubscriberId}");
+                        var deleteKey = $"{ _configInfo.SubscriberPath }{ deletedSubscriberId}";
+                        var locker = client.CreateLock(deleteKey);
+                        await client.KV.Delete(deleteKey,await locker.Acquire());
+                        await locker.Destroy();
                     }
                 }
                 foreach (var serviceSubscriber in subscribers)
                 {
+                    var key = $"{_configInfo.SubscriberPath}{serviceSubscriber.ServiceDescriptor.Id}";
+                    var locker = client.CreateLock(key);
                     var nodeData = _serializer.Serialize(serviceSubscriber);
-                    var keyValuePair = new KVPair($"{_configInfo.SubscriberPath}{serviceSubscriber.ServiceDescriptor.Id}") { Value = nodeData };
-                    await client.KV.Put(keyValuePair);
+                    var keyValuePair = new KVPair(key) { Value = nodeData };
+                    await client.KV.Put(keyValuePair, await locker.Acquire());
+                    await locker.Destroy();
                 }
             }
         }
@@ -101,7 +108,7 @@ namespace Surging.Core.Consul
         public override async Task SetSubscribersAsync(IEnumerable<ServiceSubscriber> subscribers)
         {
             var serviceSubscribers = await GetSubscribers(subscribers.Select(p => $"{ _configInfo.SubscriberPath }{ p.ServiceDescriptor.Id}"));
-            if (serviceSubscribers.Count() > 0)
+            if (serviceSubscribers.Any())
             {
                 foreach (var subscriber in subscribers)
                 {

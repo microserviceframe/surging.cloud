@@ -138,11 +138,14 @@ namespace Surging.Core.Consul
                     _logger.LogInformation("准备添加服务命令。");
                 foreach (var serviceCommand in serviceCommands)
                 {
+                    var key = $"{_configInfo.CommandPath}{serviceCommand.ServiceId}";
+                    var locker = client.CreateLock(key);
                     var nodeData = _serializer.Serialize(serviceCommand);
-                    var keyValuePair = new KVPair($"{_configInfo.CommandPath}{serviceCommand.ServiceId}") { Value = nodeData };
-                    var isSuccess = await client.KV.Put(keyValuePair);
+                    var keyValuePair = new KVPair(key) { Value = nodeData };
+                    var isSuccess = await client.KV.Put(keyValuePair,await locker.Acquire());
                     if (isSuccess.Response)
                         NodeChange(serviceCommand);
+                    await locker.Destroy();
                 }
             }
         }
