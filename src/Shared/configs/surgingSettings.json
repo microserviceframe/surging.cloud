@@ -67,7 +67,7 @@
     "Protocols": "Http1AndHttp2",
     "ApiGetWay": {
       "AccessTokenExpireTimeSpan": "10080",
-      "AuthenticationRoutePath": "v1/api/account/login",
+      "AuthenticationRoutePath": "api/user/authentication",
       "AuthenticationServiceKey": "",
       "AuthorizationRoutePath": "",
       "AuthorizationServiceKey": "",

@@ -160,10 +160,18 @@ namespace Surging.Core.Zookeeper
             foreach (var zooKeeper in zooKeepers)
             {
                 var nodePath = $"{path}{e.Route.ServiceDescriptor.Id}";
-                if (zooKeeper.Item2.existsAsync(nodePath).Result != null)
+                try
                 {
-                    zooKeeper.Item2.deleteAsync(nodePath).Wait();
+                    if (zooKeeper.Item2.existsAsync(nodePath).Result != null)
+                    {
+                        zooKeeper.Item2.deleteAsync(nodePath).Wait();
+                    }
                 }
+                catch (Exception ex) 
+                {
+                    _logger.LogWarning(ex.Message, ex);
+                }
+                
             }
         }
 
