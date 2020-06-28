@@ -4,6 +4,7 @@ using Surging.Core.CPlatform.Address;
 using Surging.Core.CPlatform.Routing;
 using Surging.Core.CPlatform.Routing.Implementation;
 using Surging.Core.CPlatform.Serialization;
+using Surging.Core.CPlatform.Support;
 using Surging.Core.CPlatform.Transport.Implementation;
 using Surging.Core.CPlatform.Utilities;
 using Surging.Core.Zookeeper.Configurations;
@@ -371,8 +372,8 @@ namespace Surging.Core.Zookeeper
 
         private async Task EnterRoutes(bool needUpdateFromServiceCenter = false)
         {
-            if (_routes != null || !needUpdateFromServiceCenter)
-                return; 
+            if (_routes != null && _routes.Length > 0 && !(await IsNeedUpdateRoutes(_routes.Length)) && !needUpdateFromServiceCenter)
+                return;
             var zooKeeper = await GetZooKeeper();
             zooKeeper.Item1.WaitOne();
             var watcher = new ChildrenMonitorWatcher(GetZooKeeper, _configInfo.RoutePath,
@@ -412,6 +413,7 @@ namespace Surging.Core.Zookeeper
                 return;
 
             var newRoute = await GetRoute(newData);
+            
             //得到旧的路由。
             var oldRoute = _routes.FirstOrDefault(i => i.ServiceDescriptor.Id == newRoute.ServiceDescriptor.Id);
 
@@ -469,6 +471,21 @@ namespace Surging.Core.Zookeeper
 
             if (_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation("路由数据更新成功。");
+        }
+
+        private async Task<bool> IsNeedUpdateRoutes(int routeCount)
+        {
+            var commmadManager = ServiceLocator.GetService<IServiceCommandManager>();
+            var commands = commmadManager.GetServiceCommandsAsync().Result;
+            if (commands != null && commands.Any() && commands.Count() <= routeCount)
+            {
+                if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Warning))
+                    _logger.LogWarning($"从数据中心获取到{routeCount}条路由信息,{commands.Count()}条服务命令信息,无需更新路由信息");
+                return false;
+            }
+            if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Warning))
+                _logger.LogWarning($"从数据中心获取到{routeCount}条路由信息,{commands.Count()}条服务命令信息,需要更新路由信息");
+            return true;
         }
 
 
