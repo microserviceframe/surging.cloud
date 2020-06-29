@@ -70,7 +70,7 @@ namespace Surging.Core.Zookeeper
                 {
                     var nodePath = "/" + string.Join("/", childrens);
 
-                    if (await zooKeeper.Item2.Exists(nodePath))
+                    if (await zooKeeper.Item2.existsAsync(nodePath) != null)
                     {
                         var result = await zooKeeper.Item2.getChildrenAsync(nodePath);
                         if (result?.Children != null)
@@ -119,7 +119,7 @@ namespace Surging.Core.Zookeeper
                 {
                     var nodePath = $"{path}{command.ServiceId}";
                     var nodeData = _serializer.Serialize(command);
-                    if (!await zooKeeper.Item2.Exists(nodePath))
+                    if (await zooKeeper.Item2.existsAsync(nodePath) == null)
                     {
                         if (_logger.IsEnabled(LogLevel.Debug))
                             _logger.LogDebug($"节点：{nodePath}不存在将进行创建。");
@@ -159,17 +159,13 @@ namespace Surging.Core.Zookeeper
             var zooKeepers = _zookeeperClientProvider.GetZooKeepers().Result;
             foreach (var zooKeeper in zooKeepers)
             {
-                var nodePath = $"{path}{e.Route.ServiceDescriptor.Id}";
-                try
+                if (zooKeeper.Item2.existsAsync(path).Result != null) 
                 {
-                    if (zooKeeper.Item2.Exists(nodePath).Result)
+                    var nodePath = $"{path}{e.Route.ServiceDescriptor.Id}";
+                    if (zooKeeper.Item2.existsAsync(nodePath).Result != null)
                     {
                         zooKeeper.Item2.deleteAsync(nodePath).Wait();
                     }
-                }
-                catch (Exception ex) 
-                {
-                    _logger.LogWarning(ex.Message, ex);
                 }
                 
             }
@@ -179,7 +175,7 @@ namespace Surging.Core.Zookeeper
         private async Task CreateSubdirectory((ManualResetEvent, ZooKeeper) zooKeeper, string path)
         {
             zooKeeper.Item1.WaitOne();
-            if (await zooKeeper.Item2.Exists(path))
+            if (await zooKeeper.Item2.existsAsync(path) != null)
                 return;
 
             if (_logger.IsEnabled(LogLevel.Information))
@@ -191,7 +187,7 @@ namespace Surging.Core.Zookeeper
             foreach (var children in childrens)
             {
                 nodePath += children;
-                if (!await zooKeeper.Item2.Exists(nodePath))
+                if (await zooKeeper.Item2.existsAsync(nodePath) == null)
                 {
                     await zooKeeper.Item2.createAsync(nodePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 }
@@ -217,7 +213,7 @@ namespace Surging.Core.Zookeeper
             var zooKeeper = await GetZooKeeper();
             var watcher = new NodeMonitorWatcher(GetZooKeeper, path,
                   (oldData, newData) => NodeChange(oldData, newData));
-            if (await zooKeeper.Item2.Exists(path))
+            if (await zooKeeper.Item2.existsAsync(path) != null)
             {
                 var data = (await zooKeeper.Item2.getDataAsync(path, watcher)).Data;
                 watcher.SetCurrentData(data);
@@ -256,7 +252,7 @@ namespace Surging.Core.Zookeeper
             zooKeeper.Item1.WaitOne();
             var watcher = new ChildrenMonitorWatcher(GetZooKeeper, _configInfo.CommandPath,
                 async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens));
-            if (await zooKeeper.Item2.Exists(_configInfo.CommandPath, watcher))
+            if (await zooKeeper.Item2.existsAsync(_configInfo.CommandPath, watcher) != null)
             {
                 var result = await zooKeeper.Item2.getChildrenAsync(_configInfo.CommandPath, watcher);
                 var childrens = result.Children.ToArray();
@@ -288,20 +284,24 @@ namespace Surging.Core.Zookeeper
 
         public void NodeChange(ServiceCommandDescriptor newCommand)
         {
-            //得到旧的服务命令。
-            var oldCommand = _serviceCommands.FirstOrDefault(i => i.ServiceId == newCommand.ServiceId);
-
-            lock (_serviceCommands)
+            if (_serviceCommands != null && _serviceCommands.Any()) 
             {
-                //删除旧服务命令，并添加上新的服务命令。
-                _serviceCommands =
-                    _serviceCommands
-                        .Where(i => i.ServiceId != newCommand.ServiceId)
-                        .Concat(new[] { newCommand }).ToArray();
-            }
-            
+                //得到旧的服务命令。
+                var oldCommand = _serviceCommands.FirstOrDefault(i => i.ServiceId == newCommand.ServiceId);
+
+                lock (_serviceCommands)
+                {
+                    //删除旧服务命令，并添加上新的服务命令。
+                    _serviceCommands =
+                        _serviceCommands
+                            .Where(i => i.ServiceId != newCommand.ServiceId)
+                            .Concat(new[] { newCommand }).ToArray();
+                }
+
                 //触发服务命令变更事件。
-            OnChanged(new ServiceCommandChangedEventArgs(newCommand, oldCommand));
+                OnChanged(new ServiceCommandChangedEventArgs(newCommand, oldCommand));
+            }
+          
         }
 
         public void NodeChange(byte[] oldData, byte[] newData)
@@ -310,19 +310,23 @@ namespace Surging.Core.Zookeeper
                 return;
 
             var newCommand = GetServiceCommand(newData);
-            //得到旧的服务命令。
-            var oldCommand = _serviceCommands.FirstOrDefault(i => i.ServiceId == newCommand.ServiceId);
-
-            lock (_serviceCommands)
+            if (_serviceCommands != null && _serviceCommands.Any()) 
             {
-                //删除旧服务命令，并添加上新的服务命令。
-                _serviceCommands =
-                    _serviceCommands
-                        .Where(i => i.ServiceId != newCommand.ServiceId)
-                        .Concat(new[] { newCommand }).ToArray();
+                //得到旧的服务命令。
+                var oldCommand = _serviceCommands.FirstOrDefault(i => i.ServiceId == newCommand.ServiceId);
+
+                lock (_serviceCommands)
+                {
+                    //删除旧服务命令，并添加上新的服务命令。
+                    _serviceCommands =
+                        _serviceCommands
+                            .Where(i => i.ServiceId != newCommand.ServiceId)
+                            .Concat(new[] { newCommand }).ToArray();
+                }
+                //触发服务命令变更事件。
+                OnChanged(new ServiceCommandChangedEventArgs(newCommand, oldCommand));
             }
-            //触发服务命令变更事件。
-            OnChanged(new ServiceCommandChangedEventArgs(newCommand, oldCommand));
+           
         }
 
         public async Task ChildrenChange(string[] oldChildrens, string[] newChildrens)
@@ -345,21 +349,24 @@ namespace Surging.Core.Zookeeper
 
             //获取新增的服务命令信息。
             var newCommands = (await GetServiceCommands(createdChildrens)).ToArray();
-
-            var routes = _serviceCommands.ToArray();
-            lock (_serviceCommands)
+            if (_serviceCommands != null && _serviceCommands.Any()) 
             {
-                _serviceCommands = _serviceCommands
-                    //删除无效的节点服务命令。
-                    .Where(i => !deletedChildrens.Contains(i.ServiceId))
-                    //连接上新的服务命令。
-                    .Concat(newCommands)
-                    .ToArray();
+                var routes = _serviceCommands.ToArray();
+                lock (_serviceCommands)
+                {
+                    _serviceCommands = _serviceCommands
+                        //删除无效的节点服务命令。
+                        .Where(i => !deletedChildrens.Contains(i.ServiceId))
+                        //连接上新的服务命令。
+                        .Concat(newCommands)
+                        .ToArray();
+                }
+                //需要删除的服务命令集合。
+                var deletedRoutes = routes.Where(i => deletedChildrens.Contains(i.ServiceId)).ToArray();
+                //触发删除事件。
+                OnRemoved(deletedRoutes.Select(command => new ServiceCommandEventArgs(command)).ToArray());
+
             }
-            //需要删除的服务命令集合。
-            var deletedRoutes = routes.Where(i => deletedChildrens.Contains(i.ServiceId)).ToArray();
-            //触发删除事件。
-            OnRemoved(deletedRoutes.Select(command => new ServiceCommandEventArgs(command)).ToArray());
 
             //触发服务命令被创建事件。
             OnCreated(newCommands.Select(command => new ServiceCommandEventArgs(command)).ToArray());

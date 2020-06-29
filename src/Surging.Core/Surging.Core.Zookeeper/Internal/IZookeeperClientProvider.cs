@@ -9,10 +9,10 @@ namespace Surging.Core.Zookeeper.Internal
 {
    public interface IZookeeperClientProvider
     {
-        Task<(ManualResetEvent, ZooKeeper)> GetZooKeeper();
+        ValueTask<(ManualResetEvent, ZooKeeper)> GetZooKeeper();
 
-        Task<IEnumerable<(ManualResetEvent, ZooKeeper)>> GetZooKeepers();
+        ValueTask<IEnumerable<(ManualResetEvent, ZooKeeper)>> GetZooKeepers();
 
-        Task Check();
+        ValueTask Check();
     }
 }

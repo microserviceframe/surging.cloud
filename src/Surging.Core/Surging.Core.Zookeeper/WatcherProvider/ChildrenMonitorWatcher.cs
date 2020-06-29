@@ -61,7 +61,7 @@ namespace Surging.Core.Zookeeper.WatcherProvider
                 case Event.EventType.NodeDeleted:
                     {
                         var watcher = getWatcher();
-                        await zooKeeper.Item2.Exists(path, watcher);
+                        await zooKeeper.Item2.existsAsync(path, watcher);
                         _action(_currentData, new string[0]);
                         watcher.SetCurrentData(new string[0]);
                     }

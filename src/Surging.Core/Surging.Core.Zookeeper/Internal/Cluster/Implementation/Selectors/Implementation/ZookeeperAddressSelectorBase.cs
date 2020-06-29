@@ -27,7 +27,7 @@ namespace Surging.Core.Zookeeper.Internal.Cluster.Implementation.Selectors.Imple
                 throw new ArgumentNullException(nameof(context.Address));
 
             //  var address = context.Address.ToArray();
-            if (!context.Address.Any())
+            if (context.Address.Count() == 0)
                 throw new ArgumentException("没有任何地址信息。", nameof(context.Address));
 
             if (context.Address.Count() == 1)
@@ -36,7 +36,8 @@ namespace Surging.Core.Zookeeper.Internal.Cluster.Implementation.Selectors.Imple
             }
             else
             {
-                return  await SelectAsync(context);
+                var vt = SelectAsync(context);
+                return vt.IsCompletedSuccessfully ? vt.Result : await vt;
             }
         }
 

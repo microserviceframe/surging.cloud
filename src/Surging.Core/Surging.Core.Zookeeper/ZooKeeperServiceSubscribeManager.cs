@@ -65,7 +65,7 @@ namespace Surging.Core.Zookeeper
                 {
                     var nodePath = "/" + string.Join("/", childrens);
 
-                    if (await zooKeeper.Item2.Exists(nodePath))
+                    if (await zooKeeper.Item2.existsAsync(nodePath) != null)
                     {
                         var result = await zooKeeper.Item2.getChildrenAsync(nodePath);
                         if (result?.Children != null)
@@ -75,11 +75,7 @@ namespace Surging.Core.Zookeeper
                                 var childPath = $"{nodePath}/{child}";
                                 if (_logger.IsEnabled(LogLevel.Debug))
                                     _logger.LogDebug($"准备删除：{childPath}。");
-                                if (await zooKeeper.Item2.Exists(childPath)) 
-                                {
-                                    await zooKeeper.Item2.deleteAsync(childPath);
-                                }
-                                
+                                await zooKeeper.Item2.deleteAsync(childPath);
                             }
                         }
                         if (_logger.IsEnabled(LogLevel.Debug))
@@ -130,7 +126,7 @@ namespace Surging.Core.Zookeeper
                 {
                     var nodePath = $"{path}{serviceSubscriber.ServiceDescriptor.Id}";
                     var nodeData = _serializer.Serialize(serviceSubscriber);
-                    if (!await zooKeeper.Item2.Exists(nodePath))
+                    if (await zooKeeper.Item2.existsAsync(nodePath) == null)
                     {
                         if (_logger.IsEnabled(LogLevel.Debug))
                             _logger.LogDebug($"节点：{nodePath}不存在将进行创建。");
@@ -171,7 +167,7 @@ namespace Surging.Core.Zookeeper
         private async Task CreateSubdirectory((ManualResetEvent, ZooKeeper) zooKeeper, string path)
         {
             zooKeeper.Item1.WaitOne();
-            if (await zooKeeper.Item2.Exists(path))
+            if (await zooKeeper.Item2.existsAsync(path) != null)
                 return;
 
             if (_logger.IsEnabled(LogLevel.Information))
@@ -183,7 +179,7 @@ namespace Surging.Core.Zookeeper
             foreach (var children in childrens)
             {
                 nodePath += children;
-                if (!await zooKeeper.Item2.Exists(nodePath) )
+                if (await zooKeeper.Item2.existsAsync(nodePath) == null)
                 {
                     await zooKeeper.Item2.createAsync(nodePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 }
@@ -208,7 +204,7 @@ namespace Surging.Core.Zookeeper
             ServiceSubscriber result = null;
 
             var zooKeeper = await GetZooKeeper();
-            if (await zooKeeper.Item2.Exists(path))
+            if (await zooKeeper.Item2.existsAsync(path) != null)
             {
                 var data = (await zooKeeper.Item2.getDataAsync(path)).Data;
                 result = await GetSubscriber(data);
@@ -245,7 +241,7 @@ namespace Surging.Core.Zookeeper
             var zooKeeper = await GetZooKeeper();
             zooKeeper.Item1.WaitOne(); 
 
-            if (await zooKeeper.Item2.Exists(_configInfo.SubscriberPath))
+            if (await zooKeeper.Item2.existsAsync(_configInfo.SubscriberPath) != null)
             {
                 var result = await zooKeeper.Item2.getChildrenAsync(_configInfo.SubscriberPath);
                 var childrens = result.Children.ToArray();

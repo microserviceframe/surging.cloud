@@ -69,7 +69,7 @@ namespace Surging.Core.Zookeeper
                 {
                     var nodePath = "/" + string.Join("/", childrens);
 
-                    if (await zooKeeper.Item2.Exists(nodePath))
+                    if (await zooKeeper.Item2.existsAsync(nodePath) != null)
                     {
                         var result = await zooKeeper.Item2.getChildrenAsync(nodePath);
                         if (result?.Children != null)
@@ -79,11 +79,7 @@ namespace Surging.Core.Zookeeper
                                 var childPath = $"{nodePath}/{child}";
                                 if (_logger.IsEnabled(LogLevel.Debug))
                                     _logger.LogDebug($"准备删除：{childPath}。");
-                                if (await zooKeeper.Item2.Exists(childPath)) 
-                                {
-                                    await zooKeeper.Item2.deleteAsync(childPath);
-                                }
-                               
+                                await zooKeeper.Item2.deleteAsync(childPath);
                             }
                         }
                         if (_logger.IsEnabled(LogLevel.Debug))
@@ -120,7 +116,7 @@ namespace Surging.Core.Zookeeper
                 {
                     var nodePath = $"{path}{serviceRoute.MqttDescriptor.Topic}";
                     var nodeData = _serializer.Serialize(serviceRoute);
-                    if (!await zooKeeper.Item2.Exists(nodePath))
+                    if (await zooKeeper.Item2.existsAsync(nodePath) == null)
                     {
                         if (_logger.IsEnabled(LogLevel.Debug))
                             _logger.LogDebug($"节点：{nodePath}不存在将进行创建。");
@@ -208,11 +204,7 @@ namespace Surging.Core.Zookeeper
                         if (addresses.Contains(hostAddr))
                         {
                             var nodePath = $"{path}{deletedRouteTopic}";
-                            if (await zooKeeper.Item2.Exists(nodePath)) 
-                            {
-                                await zooKeeper.Item2.deleteAsync(nodePath);
-                            }
-                            
+                            await zooKeeper.Item2.deleteAsync(nodePath);
                         }
                     }
                 }
@@ -222,7 +214,7 @@ namespace Surging.Core.Zookeeper
         private async Task CreateSubdirectory((ManualResetEvent, ZooKeeper) zooKeeper, string path)
         {
             zooKeeper.Item1.WaitOne();
-            if (await zooKeeper.Item2.Exists(path))
+            if (await zooKeeper.Item2.existsAsync(path) != null)
                 return;
 
             if (_logger.IsEnabled(LogLevel.Information))
@@ -234,7 +226,7 @@ namespace Surging.Core.Zookeeper
             foreach (var children in childrens)
             {
                 nodePath += children;
-                if (!await zooKeeper.Item2.Exists(nodePath))
+                if (await zooKeeper.Item2.existsAsync(nodePath) == null)
                 {
                     await zooKeeper.Item2.createAsync(nodePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 }
@@ -261,7 +253,7 @@ namespace Surging.Core.Zookeeper
             var zooKeeper = await GetZooKeeper();
             var watcher = new NodeMonitorWatcher(GetZooKeeper, path,
                  async (oldData, newData) => await NodeChange(oldData, newData));
-            if (await zooKeeper.Item2.Exists(path))
+            if (await zooKeeper.Item2.existsAsync(path) != null)
             {
                 var data = (await zooKeeper.Item2.getDataAsync(path, watcher)).Data;
                 watcher.SetCurrentData(data);
@@ -299,7 +291,7 @@ namespace Surging.Core.Zookeeper
             zooKeeper.Item1.WaitOne(); 
             var watcher = new ChildrenMonitorWatcher(GetZooKeeper, _configInfo.MqttRoutePath,
              async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens));
-            if (await zooKeeper.Item2.Exists(_configInfo.MqttRoutePath, watcher))
+            if (await zooKeeper.Item2.existsAsync(_configInfo.MqttRoutePath, watcher) != null)
             {
                 var result = await zooKeeper.Item2.getChildrenAsync(_configInfo.MqttRoutePath, watcher);
                 var childrens = result.Children.ToArray();
@@ -334,17 +326,21 @@ namespace Surging.Core.Zookeeper
                 return;
 
             var newRoute = await GetRoute(newData);
-            //得到旧的mqtt路由。
-            var oldRoute = _routes.FirstOrDefault(i => i.MqttDescriptor.Topic == newRoute.MqttDescriptor.Topic);
-
-            lock (_routes)
+            if (_routes != null && _routes.Any()) 
             {
-                //删除旧mqtt路由，并添加上新的mqtt路由。
-                _routes =
-                    _routes
-                        .Where(i => i.MqttDescriptor.Topic != newRoute.MqttDescriptor.Topic)
-                        .Concat(new[] { newRoute }).ToArray();
+                //得到旧的mqtt路由。
+                var oldRoute = _routes.FirstOrDefault(i => i.MqttDescriptor.Topic == newRoute.MqttDescriptor.Topic);
+
+                lock (_routes)
+                {
+                    //删除旧mqtt路由，并添加上新的mqtt路由。
+                    _routes =
+                        _routes
+                            .Where(i => i.MqttDescriptor.Topic != newRoute.MqttDescriptor.Topic)
+                            .Concat(new[] { newRoute }).ToArray();
+                }
             }
+            
 
             //触发路由变更事件。
             OnChanged(new MqttServiceRouteChangedEventArgs(newRoute, oldRoute));
@@ -370,22 +366,23 @@ namespace Surging.Core.Zookeeper
 
             //获取新增的mqtt路由信息。
             var newRoutes = (await GetRoutes(createdChildrens)).ToArray();
-
-            var routes = _routes.ToArray();
-            lock (_routes)
+            if (_routes != null && _routes.Any()) 
             {
-                _routes = _routes
-                    //删除无效的节点路由。
-                    .Where(i => !deletedChildrens.Contains(i.MqttDescriptor.Topic))
-                    //连接上新的mqtt路由。
-                    .Concat(newRoutes)
-                    .ToArray();
+                var routes = _routes.ToArray();
+                lock (_routes)
+                {
+                    _routes = _routes
+                        //删除无效的节点路由。
+                        .Where(i => !deletedChildrens.Contains(i.MqttDescriptor.Topic))
+                        //连接上新的mqtt路由。
+                        .Concat(newRoutes)
+                        .ToArray();
+                }
+                //需要删除的Topic路由集合。
+                var deletedRoutes = routes.Where(i => deletedChildrens.Contains(i.MqttDescriptor.Topic)).ToArray();
+                //触发删除事件。
+                OnRemoved(deletedRoutes.Select(route => new MqttServiceRouteEventArgs(route)).ToArray());
             }
-            //需要删除的Topic路由集合。
-            var deletedRoutes = routes.Where(i => deletedChildrens.Contains(i.MqttDescriptor.Topic)).ToArray();
-            //触发删除事件。
-            OnRemoved(deletedRoutes.Select(route => new MqttServiceRouteEventArgs(route)).ToArray());
-
             //触发路由被创建事件。
             OnCreated(newRoutes.Select(route => new MqttServiceRouteEventArgs(route)).ToArray());
 

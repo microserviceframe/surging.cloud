@@ -36,18 +36,18 @@ namespace Surging.Core.Zookeeper.Internal.Implementation
             _zookeeperAddressSelector = zookeeperAddressSelector;
             _logger = logger;
         }
-        public async Task Check()
+        public async ValueTask Check()
         {
             foreach (var address in _config.Addresses)
             {
                 if (!await _healthCheckService.IsHealth(address))
                 {
-                    throw new RegisterConnectionException(string.Format("注册中心{0}连接异常，请联系管理员", address.ToString()));
+                    throw new RegisterConnectionException(string.Format("注册中心{0}连接异常，请联系管理园", address.ToString()));
                 }
             }
         }
 
-        public async Task<(ManualResetEvent, ZooKeeper)> GetZooKeeper()
+        public async ValueTask<(ManualResetEvent, ZooKeeper)> GetZooKeeper()
         {
 
             (ManualResetEvent, ZooKeeper) result = new ValueTuple<ManualResetEvent, ZooKeeper>();
@@ -113,7 +113,7 @@ namespace Surging.Core.Zookeeper.Internal.Implementation
             return result;
         }
 
-        public async Task<IEnumerable<(ManualResetEvent, ZooKeeper)>> GetZooKeepers()
+        public async ValueTask<IEnumerable<(ManualResetEvent, ZooKeeper)>> GetZooKeepers()
         {
             var result = new List<(ManualResetEvent, ZooKeeper)>();
             foreach (var address in _config.Addresses)
