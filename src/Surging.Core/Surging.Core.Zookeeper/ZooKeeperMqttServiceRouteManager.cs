@@ -339,11 +339,10 @@ namespace Surging.Core.Zookeeper
                             .Where(i => i.MqttDescriptor.Topic != newRoute.MqttDescriptor.Topic)
                             .Concat(new[] { newRoute }).ToArray();
                 }
+                //触发路由变更事件。
+                OnChanged(new MqttServiceRouteChangedEventArgs(newRoute, oldRoute));
             }
-            
-
-            //触发路由变更事件。
-            OnChanged(new MqttServiceRouteChangedEventArgs(newRoute, oldRoute));
+          
         }
 
         public async Task ChildrenChange(string[] oldChildrens, string[] newChildrens)
