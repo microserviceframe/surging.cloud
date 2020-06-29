@@ -53,7 +53,7 @@ namespace Surging.Core.Zookeeper
                 {
                     var nodePath = "/" + string.Join("/", childrens);
 
-                    if (await zooKeeper.Item2.existsAsync(nodePath) != null)
+                    if (await zooKeeper.Item2.Exists(nodePath))
                     {
                         var result = await zooKeeper.Item2.getChildrenAsync(nodePath);
                         if (result?.Children != null)
@@ -63,7 +63,11 @@ namespace Surging.Core.Zookeeper
                                 var childPath = $"{nodePath}/{child}";
                                 if (_logger.IsEnabled(LogLevel.Debug))
                                     _logger.LogDebug($"准备删除：{childPath}。");
-                                await zooKeeper.Item2.deleteAsync(childPath);
+                                if (await zooKeeper.Item2.Exists(childPath)) 
+                                {
+                                    await zooKeeper.Item2.deleteAsync(childPath);
+                                }
+                                
                             }
                         }
                         if (_logger.IsEnabled(LogLevel.Debug))
@@ -130,7 +134,7 @@ namespace Surging.Core.Zookeeper
                 {
                     var nodePath = $"{path}{cacheDescriptor.CacheDescriptor.Id}";
                     var nodeData = _serializer.Serialize(cacheDescriptor);
-                    if (await zooKeeper.Item2.existsAsync(nodePath) == null)
+                    if (!await zooKeeper.Item2.Exists(nodePath))
                     {
                         if (_logger.IsEnabled(LogLevel.Debug))
                             _logger.LogDebug($"节点：{nodePath}不存在将进行创建。");
@@ -177,7 +181,7 @@ namespace Surging.Core.Zookeeper
         private async Task CreateSubdirectory((ManualResetEvent, ZooKeeper) zooKeeper, string path)
         {
             zooKeeper.Item1.WaitOne();
-            if (await zooKeeper.Item2.existsAsync(path) != null)
+            if (await zooKeeper.Item2.Exists(path))
                 return;
 
             if (_logger.IsEnabled(LogLevel.Information))
@@ -189,7 +193,7 @@ namespace Surging.Core.Zookeeper
             foreach (var children in childrens)
             {
                 nodePath += children;
-                if (await zooKeeper.Item2.existsAsync(nodePath) == null)
+                if (!await zooKeeper.Item2.Exists(nodePath))
                 {
                     await zooKeeper.Item2.createAsync(nodePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 }
@@ -203,7 +207,7 @@ namespace Surging.Core.Zookeeper
             var zooKeeper = await GetZooKeeper();
             var watcher = new NodeMonitorWatcher(GetZooKeeper, path,
                  async (oldData, newData) => await NodeChange(oldData, newData));
-            if (await zooKeeper.Item2.existsAsync(path) != null)
+            if (await zooKeeper.Item2.Exists(path))
             {
                 var data = (await zooKeeper.Item2.getDataAsync(path, watcher)).Data;
                 watcher.SetCurrentData(data);
@@ -229,7 +233,11 @@ namespace Surging.Core.Zookeeper
                     foreach (var deletedCacheId in deletedCacheIds)
                     {
                         var nodePath = $"{path}{deletedCacheId}";
-                        await zooKeeper.Item2.deleteAsync(nodePath);
+                        if (await zooKeeper.Item2.Exists(nodePath))
+                        {
+                            await zooKeeper.Item2.deleteAsync(nodePath);
+                        }
+                       
                     }
                 }
             }
@@ -244,7 +252,7 @@ namespace Surging.Core.Zookeeper
             var path = _configInfo.CachePath;
             var watcher = new ChildrenMonitorWatcher(GetZooKeeper, path,
                 async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens));
-            if (await zooKeeper.Item2.existsAsync(path, watcher) != null)
+            if (await zooKeeper.Item2.Exists(path, watcher))
             {
                 var result = await zooKeeper.Item2.getChildrenAsync(path, watcher);
                 var childrens = result.Children.ToArray();

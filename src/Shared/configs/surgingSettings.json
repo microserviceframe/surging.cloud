@@ -73,7 +73,7 @@
       "AuthorizationServiceKey": "",
       "TokenEndpointPath": "api/oauth2/token",
       "CacheMode": "ddlCache.Redis", //MemoryCache or  gateway.Redis save token
-      "IsUsingTerminal": true,
+      "IsUsingTerminal": false,
       "Terminals": "dashboard,web,iosapp,androidapp"
     },
     "AccessPolicy": {
@@ -115,12 +115,12 @@
   "Swagger": {
     "Info": {
       "Version": "${SwaggerVersion}|V1", // "127.0.0.1:8500",
-      "Title": "${SwaggerTitle}|jingshonline",
-      "Description": "${SwaggerDes}|jingshonline web api",
+      "Title": "${SwaggerTitle}|hero",
+      "Description": "${SwaggerDes}|hero web api",
       "Contact": {
-        "Name": "${SupportName}|京师在线",
+        "Name": "${SupportName}|hero",
         "Url": "",
-        "Email": "${SupportEmail}|support@jingshionline.com"
+        "Email": "${SupportEmail}|support@hero.com"
       },
       "License": {
         "Name": "",
@@ -131,7 +131,7 @@
       "IgnoreFullyQualified": false,
       "MapRoutePaths": [
         {
-          "SourceRoutePath": "v1/api/account/login",
+          "SourceRoutePath": "api/user/authentication",
           "TargetRoutePath": "api/oauth2/token"
         }
       ],
