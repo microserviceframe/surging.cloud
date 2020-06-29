@@ -1,4 +1,5 @@
 ﻿using org.apache.zookeeper;
+using Rabbit.Zookeeper;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,13 +10,13 @@ namespace Surging.Core.Zookeeper.WatcherProvider
 {
     internal class NodeMonitorWatcher : WatcherBase
     {
-        private readonly Func<ValueTask<(ManualResetEvent, ZooKeeper)>> _zooKeeperCall;
+        private readonly IZookeeperClient _zookeeperClient;
         private readonly Action<byte[], byte[]> _action;
         private byte[] _currentData;
 
-        public NodeMonitorWatcher(Func<ValueTask<(ManualResetEvent, ZooKeeper)>> zooKeeperCall, string path, Action<byte[], byte[]> action) : base(path)
+        public NodeMonitorWatcher(IZookeeperClient zookeeperClient, string path, Action<byte[], byte[]> action) : base(path)
         {
-            _zooKeeperCall = zooKeeperCall;
+            _zookeeperClient = zookeeperClient;
             _action = action;
         }
 
@@ -34,9 +35,9 @@ namespace Surging.Core.Zookeeper.WatcherProvider
             switch (watchedEvent.get_Type())
             {
                 case Event.EventType.NodeDataChanged:
-                    var zooKeeper = await _zooKeeperCall();
-                    var watcher = new NodeMonitorWatcher(_zooKeeperCall, path, _action);
-                    var data = await zooKeeper.Item2.getDataAsync(path, watcher);
+              
+                    var watcher = new NodeMonitorWatcher(_zookeeperClient, path, _action);
+                    var data = await _zookeeperClient.ZooKeeper.getDataAsync(path, watcher);
                     var newData = data.Data;
                     _action(_currentData, newData);
                     watcher.SetCurrentData(newData);

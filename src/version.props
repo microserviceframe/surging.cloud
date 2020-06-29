@@ -3,7 +3,7 @@
 		<VersionMajor>2</VersionMajor>
 		<VersionMinor>0</VersionMinor>
 		<VersionPatch>3</VersionPatch>
-		<VersionQuality>bate.23</VersionQuality>
+		<VersionQuality>bate.29</VersionQuality>
 		<VersionPrefix>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(VersionQuality)</VersionPrefix>
 	</PropertyGroup>
 </Project>
