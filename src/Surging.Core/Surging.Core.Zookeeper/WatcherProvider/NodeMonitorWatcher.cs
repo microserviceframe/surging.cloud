@@ -35,12 +35,14 @@ namespace Surging.Core.Zookeeper.WatcherProvider
             switch (watchedEvent.get_Type())
             {
                 case Event.EventType.NodeDataChanged:
-              
-                    var watcher = new NodeMonitorWatcher(_zookeeperClient, path, _action);
-                    var data = await _zookeeperClient.ZooKeeper.getDataAsync(path, watcher);
-                    var newData = data.Data;
-                    _action(_currentData, newData);
-                    watcher.SetCurrentData(newData);
+                    if (await _zookeeperClient.StrictExistsAsync(path))
+                    {
+                        var watcher = new NodeMonitorWatcher(_zookeeperClient, path, _action);
+                        var data = await _zookeeperClient.ZooKeeper.getDataAsync(path, watcher);
+                        var newData = data.Data;
+                        _action(_currentData, newData);
+                        watcher.SetCurrentData(newData);
+                    }
                     break;
             }
         }
