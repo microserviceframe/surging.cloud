@@ -36,7 +36,7 @@ namespace Surging.Core.Zookeeper
             _serviceCacheFactory = serviceCacheFactory;
             _logger = logger;
             _zookeeperClientProvider = zookeeperClientProvider;
-            EnterCaches().Wait();
+            EnterCaches().Wait(_configInfo.ConnectionTimeout);
         }
 
         public override async Task ClearAsync()

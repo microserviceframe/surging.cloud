@@ -162,28 +162,13 @@ namespace Surging.Core.Zookeeper
             foreach (var zooKeeperClient in zooKeeperClients)
             {
                 var nodePath = $"{path}{e.Route.ServiceDescriptor.Id}";
-                try 
-                {
-                    var isExist = zooKeeperClient.ExistsAsync(nodePath).Result;
-                    if (isExist)
-                    {
-                        zooKeeperClient.DeleteAsync(nodePath).Wait();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    if (ex is NoNodeException || ex.InnerException is NoNodeException)
-                    {
-                        if (_logger.IsEnabled(LogLevel.Debug))
-                            _logger.LogDebug($"不存在节点{nodePath}", ex);
-                    }
-                    else 
-                    {
-                        throw ex;
-                    }
+                var isExistTask = zooKeeperClient.ExistsAsync(nodePath);
+                isExistTask.Wait(_configInfo.ConnectionTimeout);
 
+                if (isExistTask.Result)
+                {
+                    zooKeeperClient.DeleteAsync(nodePath).Wait(_configInfo.ConnectionTimeout);
                 }
-                
 
             }
         }
