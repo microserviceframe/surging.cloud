@@ -32,3 +32,6 @@ cli-linux
 **/global.json
 **/.mysql/
 **/global.json
+*.L[l]og[s]
+**/logs/
+**/log/
