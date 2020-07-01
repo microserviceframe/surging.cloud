@@ -353,7 +353,6 @@ namespace Surging.Core.Zookeeper
             {
                 var data = (await zooKeeperClient.GetDataAsync(path)).ToArray();
                 var watcher = nodeWatchers.GetOrAdd(path, f => new NodeMonitorWatcher(path, async (oldData, newData) => await NodeChange(oldData, newData)));
-                watcher.SetCurrentData(data);
                 await zooKeeperClient.SubscribeDataChange(path, watcher.HandleNodeDataChange);
                 result = await GetRoute(data);
             }

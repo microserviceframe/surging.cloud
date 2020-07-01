@@ -215,11 +215,11 @@ namespace Surging.Core.Zookeeper
             {
                 var data = (await zooKeeperClient.GetDataAsync(path)).ToArray();
                 result = await GetSubscriber(data);
-                var watcher = nodeWatchers.GetOrDefault(path);
-                if (watcher != null)
-                {
-                    watcher.SetCurrentData(data);
-                }
+                //var watcher = nodeWatchers.GetOrDefault(path);
+                //if (watcher != null)
+                //{
+                //    watcher.SetCurrentData(data);
+                //}
             }
             return result;
         }

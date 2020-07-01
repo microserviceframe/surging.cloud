@@ -21,16 +21,21 @@ namespace Surging.Core.Zookeeper.WatcherProvider
             _currentData = new byte[0];
         }
 
-        public void SetCurrentData(byte[] currentData)
-        {
-            _currentData = currentData;
-        }
+        //public void SetCurrentData(byte[] currentData)
+        //{
+        //    _currentData = currentData;
+        //}
 
         internal async Task HandleNodeDataChange(IZookeeperClient client, NodeDataChangeArgs args)
         {
             Watcher.Event.EventType eventType = args.Type;
             switch (eventType)
             {
+                case Watcher.Event.EventType.NodeCreated:
+                    _action(new byte[0], args.CurrentData.ToArray());
+                    _currentData = args.CurrentData.ToArray();
+                    break;
+
                 case Watcher.Event.EventType.NodeDataChanged:
                     _action(_currentData, args.CurrentData.ToArray());
                     _currentData = args.CurrentData.ToArray();

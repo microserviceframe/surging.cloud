@@ -123,8 +123,6 @@ namespace Surging.Core.Zookeeper
                     var nodeData = _serializer.Serialize(serviceRoute);
                     var nodeWathcher = nodeWatchers.GetOrAdd(path, f => new NodeMonitorWatcher(path, async (oldData, newData) => await NodeChange(oldData, newData)));
                     await zooKeeperClient.SubscribeDataChange(path, nodeWathcher.HandleNodeDataChange);
-                    nodeWathcher.SetCurrentData(nodeData);
-
                     if (!await zooKeeperClient.ExistsAsync(nodePath))
                     {
                         if (_logger.IsEnabled(LogLevel.Debug))
@@ -264,7 +262,6 @@ namespace Surging.Core.Zookeeper
             {
                 var data = (await zooKeeperClient.GetDataAsync(path)).ToArray();
                 var watcher = nodeWatchers.GetOrAdd(path, f => new NodeMonitorWatcher(path, async (oldData, newData) => await NodeChange(oldData, newData)));
-                watcher.SetCurrentData(data);
                 await zooKeeperClient.SubscribeDataChange(path, watcher.HandleNodeDataChange);
                 result = await GetRoute(data);
             }
