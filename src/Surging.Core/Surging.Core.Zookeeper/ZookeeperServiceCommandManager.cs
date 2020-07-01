@@ -223,11 +223,9 @@ namespace Surging.Core.Zookeeper
             if (await zooKeeperClient.ExistsAsync(path))
             {
                 var data = (await zooKeeperClient.GetDataAsync(path)).ToArray();
-                var watcher = nodeWatchers.GetOrDefault(path);
-                if (watcher != null)
-                {
-                    watcher.SetCurrentData(data);
-                }
+                var watcher = nodeWatchers.GetOrAdd(path, f => new NodeMonitorWatcher(path, async (oldData, newData) => await NodeChange(oldData, newData)));
+                watcher.SetCurrentData(data);
+                await zooKeeperClient.SubscribeDataChange(path, watcher.HandleNodeDataChange);
                 result = GetServiceCommand(data);
             }
             return result;
