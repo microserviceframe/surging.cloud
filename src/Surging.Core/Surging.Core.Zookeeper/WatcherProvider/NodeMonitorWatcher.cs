@@ -2,6 +2,7 @@
 using Rabbit.Zookeeper;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,43 +11,33 @@ namespace Surging.Core.Zookeeper.WatcherProvider
 {
     internal class NodeMonitorWatcher : WatcherBase
     {
-        private readonly IZookeeperClient _zookeeperClient;
         private readonly Action<byte[], byte[]> _action;
         private byte[] _currentData;
 
-        public NodeMonitorWatcher(IZookeeperClient zookeeperClient, string path, Action<byte[], byte[]> action) : base(path)
+
+        public NodeMonitorWatcher(string path, Action<byte[], byte[]> action) : base (path)
         {
-            _zookeeperClient = zookeeperClient;
             _action = action;
+            _currentData = new byte[0];
         }
 
-        public NodeMonitorWatcher SetCurrentData(byte[] currentData)
+        public void SetCurrentData(byte[] currentData)
         {
             _currentData = currentData;
-
-            return this;
         }
 
-        #region Overrides of WatcherBase
-
-        protected override async Task ProcessImpl(WatchedEvent watchedEvent)
+        internal async Task HandleNodeDataChange(IZookeeperClient client, NodeDataChangeArgs args)
         {
-            var path = Path;
-            switch (watchedEvent.get_Type())
+            Watcher.Event.EventType eventType = args.Type;
+            switch (eventType)
             {
-                case Event.EventType.NodeDataChanged:
-                    if (await _zookeeperClient.StrictExistsAsync(path))
-                    {
-                        var watcher = new NodeMonitorWatcher(_zookeeperClient, path, _action);
-                        var data = await _zookeeperClient.ZooKeeper.getDataAsync(path, watcher);
-                        var newData = data.Data;
-                        _action(_currentData, newData);
-                        watcher.SetCurrentData(newData);
-                    }
+                case Watcher.Event.EventType.NodeDataChanged:
+                    _action(_currentData, args.CurrentData.ToArray());
+                    _currentData = args.CurrentData.ToArray();
                     break;
             }
+       
         }
 
-        #endregion Overrides of WatcherBase
     }
 }
