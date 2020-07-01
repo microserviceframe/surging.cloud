@@ -169,7 +169,7 @@ namespace Surging.Core.Zookeeper
                 foreach (var zooKeeperClient in zooKeeperClients)
                 {
                     var nodePath = $"{path}{e.Route.ServiceDescriptor.Id}";
-                    if (zooKeeperClient.ExistsAsync(nodePath).Result)
+                    if (zooKeeperClient.StrictExistsAsync(nodePath).Result)
                     {
                         zooKeeperClient.DeleteAsync(nodePath).Wait(_configInfo.ConnectionTimeout);
                     }
@@ -257,13 +257,13 @@ namespace Surging.Core.Zookeeper
 
         private async Task EnterServiceCommands()
         {
-            if (_serviceCommands != null)
+            if (_serviceCommands != null && _serviceCommands.Any())
                 return;
             var zooKeeperClient = await _zookeeperClientProvider.GetZooKeeperClient();
             var watcher = new ChildrenMonitorWatcher(_configInfo.CommandPath,
              async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens));
             await zooKeeperClient.SubscribeChildrenChange(_configInfo.CommandPath, watcher.HandleChildrenChange);
-            if (await zooKeeperClient.ExistsAsync(_configInfo.CommandPath))
+            if (await zooKeeperClient.StrictExistsAsync(_configInfo.CommandPath))
             {          
                 var childrens = (await zooKeeperClient.GetChildrenAsync(_configInfo.CommandPath)).ToArray();
                 watcher.SetCurrentData(childrens);

@@ -251,14 +251,14 @@ namespace Surging.Core.Zookeeper
 
         private async Task EnterCaches()
         {
-            if (_serviceCaches != null)
+            if (_serviceCaches != null && _serviceCaches.Any())
                 return;
             var zooKeeperClient = await _zookeeperClientProvider.GetZooKeeperClient();
             var path = _configInfo.CachePath;
             var watcher = new ChildrenMonitorWatcher(path,
                    async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens));
             await zooKeeperClient.SubscribeChildrenChange(path, watcher.HandleChildrenChange);
-            if (await zooKeeperClient.ExistsAsync(path))
+            if (await zooKeeperClient.StrictExistsAsync(path))
             {
                 var childrens = (await zooKeeperClient.GetChildrenAsync(path)).ToArray();
                 watcher.SetCurrentData(childrens);

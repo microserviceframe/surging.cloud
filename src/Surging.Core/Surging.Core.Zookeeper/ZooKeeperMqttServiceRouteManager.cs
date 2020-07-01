@@ -296,12 +296,12 @@ namespace Surging.Core.Zookeeper
 
         private async Task EnterRoutes()
         {
-            if (_routes != null)
+            if (_routes != null && _routes.Any())
                 return;
             var zooKeeperClient = await _zookeeperClientProvider.GetZooKeeperClient();
             var watcher = new ChildrenMonitorWatcher(_configInfo.MqttRoutePath, async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens));
             await zooKeeperClient.SubscribeChildrenChange(_configInfo.MqttRoutePath, watcher.HandleChildrenChange);
-            if (await zooKeeperClient.ExistsAsync(_configInfo.MqttRoutePath))
+            if (await zooKeeperClient.StrictExistsAsync(_configInfo.MqttRoutePath))
             {
                 var childrens = await zooKeeperClient.GetChildrenAsync(_configInfo.MqttRoutePath);
                 _routes = await GetRoutes(childrens);

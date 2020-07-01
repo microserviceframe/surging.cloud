@@ -248,13 +248,13 @@ namespace Surging.Core.Zookeeper
 
         private async Task EnterSubscribers()
         {
-            if (_subscribers != null)
+            if (_subscribers != null && _subscribers.Any())
                 return;
             var zooKeeperClient = await _zookeeperClientProvider.GetZooKeeperClient();
   //          var watcher = new ChildrenMonitorWatcher(_configInfo.RoutePath,
   //async (oldChildrens, newChildrens) => await ChildrenChange(oldChildrens, newChildrens));
   //          await zooKeeperClient.SubscribeChildrenChange(_configInfo.RoutePath, watcher.HandleChildrenChange);
-            if (await zooKeeperClient.ExistsAsync(_configInfo.SubscriberPath))
+            if (await zooKeeperClient.StrictExistsAsync(_configInfo.SubscriberPath))
             {
                 var childrens = (await zooKeeperClient.GetChildrenAsync(_configInfo.SubscriberPath)).ToArray();
                 _subscribers = await GetSubscribers(childrens);
