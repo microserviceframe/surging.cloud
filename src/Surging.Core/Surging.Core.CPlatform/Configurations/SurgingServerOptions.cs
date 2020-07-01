@@ -31,7 +31,7 @@ namespace Surging.Core.CPlatform.Configurations
 
         public int SoBacklog { get; set; } = 8192;
 
-        public bool EnableRouteWatch { get; set; } = true;
+        public bool EnableRouteWatch { get; set; } = false;
 
         public IPEndPoint IpEndpoint { get; set; }
 
@@ -61,10 +61,6 @@ namespace Surging.Core.CPlatform.Configurations
         public RuntimeEnvironment Environment { get; set; } = RuntimeEnvironment.Production;
 
         public bool ForceDisplayStackTrace { get; set; }
-
-        public bool IsCompensationRegisterRoutes { get; set; } = true;
-
-        public int CompensationRegisterRoutesCount { get; set; } = 2;
 
         public int HealthCheckTimeout { get; set; } = 20;
 
