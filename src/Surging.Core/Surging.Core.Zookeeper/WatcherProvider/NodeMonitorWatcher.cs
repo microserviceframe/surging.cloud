@@ -29,16 +29,21 @@ namespace Surging.Core.Zookeeper.WatcherProvider
         internal async Task HandleNodeDataChange(IZookeeperClient client, NodeDataChangeArgs args)
         {
             Watcher.Event.EventType eventType = args.Type;
+            var nodeData = new byte[0];
+            if (args.CurrentData != null && args.CurrentData.Any())
+            {
+                nodeData = args.CurrentData.ToArray();
+            }
             switch (eventType)
             {
-                case Watcher.Event.EventType.NodeCreated:
-                    _action(new byte[0], args.CurrentData.ToArray());
-                    _currentData = args.CurrentData.ToArray();
+                case Watcher.Event.EventType.NodeCreated:                    
+                    _action(new byte[0], nodeData);
+                    _currentData = nodeData;
                     break;
 
                 case Watcher.Event.EventType.NodeDataChanged:
-                    _action(_currentData, args.CurrentData.ToArray());
-                    _currentData = args.CurrentData.ToArray();
+                    _action(_currentData, nodeData);
+                    _currentData = nodeData;
                     break;
             }
        

@@ -36,7 +36,12 @@ namespace Surging.Core.Zookeeper.WatcherProvider
                 case Watcher.Event.EventType.NodeDataChanged:
                     try
                     {
-                        var currentChildrens = args.CurrentChildrens.ToArray();
+
+                        var currentChildrens = new string[0];
+                        if (args.CurrentChildrens != null && args.CurrentChildrens.Any())
+                        {
+                            currentChildrens = args.CurrentChildrens.ToArray();
+                        }
                         _action(_currentData, currentChildrens);
                         watcher.SetCurrentData(currentChildrens);
 

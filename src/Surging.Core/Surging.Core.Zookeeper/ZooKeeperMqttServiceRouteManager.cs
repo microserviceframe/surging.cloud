@@ -247,7 +247,7 @@ namespace Surging.Core.Zookeeper
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug($"准备转换mqtt服务路由，配置内容：{Encoding.UTF8.GetString(data)}。");
 
-            if (data == null)
+            if (data == null || data.Length <=0)
                 return null;
 
             var descriptor = _serializer.Deserialize<byte[], MqttServiceDescriptor>(data);
@@ -333,7 +333,7 @@ namespace Surging.Core.Zookeeper
                 return;
 
             var newRoute = await GetRoute(newData);
-            if (_routes != null && _routes.Any())
+            if (_routes != null && _routes.Any() && newRoute != null)
             {
                 //得到旧的mqtt路由。
                 var oldRoute = _routes.FirstOrDefault(i => i.MqttDescriptor.Topic == newRoute.MqttDescriptor.Topic);
@@ -348,6 +348,7 @@ namespace Surging.Core.Zookeeper
                 }
                 //触发路由变更事件。
                 OnChanged(new MqttServiceRouteChangedEventArgs(newRoute, oldRoute));
+
             }
 
         }
