@@ -230,8 +230,9 @@ namespace Surging.Core.Zookeeper
                 var zooKeeperClients = await _zookeeperClientProvider.GetZooKeeperClients();
                 foreach (var zooKeeperClient in zooKeeperClients)
                 {
-
-                    var deletedCacheIds = caches.Select(i => i.CacheDescriptor.Id).ToArray();
+                    var oldCacheIds = _serviceCaches.Select(i => i.CacheDescriptor.Id).ToArray();
+                    var newCacheIds = caches.Select(i => i.CacheDescriptor.Id).ToArray();
+                    var deletedCacheIds = oldCacheIds.Except(newCacheIds).ToArray();
                     foreach (var deletedCacheId in deletedCacheIds)
                     {
                         var nodePath = $"{path}{deletedCacheId}";

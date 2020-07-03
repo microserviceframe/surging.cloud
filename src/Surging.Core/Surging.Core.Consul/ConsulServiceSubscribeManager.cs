@@ -86,17 +86,13 @@ namespace Surging.Core.Consul
                     var deletedSubscriberIds = oldSubscriberIds.Except(newSubscriberIds).ToArray();
                     foreach (var deletedSubscriberId in deletedSubscriberIds)
                     {
-                        var deleteKey = $"{ _configInfo.SubscriberPath }{ deletedSubscriberId}";
-                       
-                        await client.KV.Delete(deleteKey);
-                       
+                        await client.KV.Delete($"{_configInfo.SubscriberPath}{deletedSubscriberId}");
                     }
                 }
                 foreach (var serviceSubscriber in subscribers)
                 {
-                    var key = $"{_configInfo.SubscriberPath}{serviceSubscriber.ServiceDescriptor.Id}";
                     var nodeData = _serializer.Serialize(serviceSubscriber);
-                    var keyValuePair = new KVPair(key) { Value = nodeData };
+                    var keyValuePair = new KVPair($"{_configInfo.SubscriberPath}{serviceSubscriber.ServiceDescriptor.Id}") { Value = nodeData };
                     await client.KV.Put(keyValuePair);
                 }
             }
@@ -105,7 +101,7 @@ namespace Surging.Core.Consul
         public override async Task SetSubscribersAsync(IEnumerable<ServiceSubscriber> subscribers)
         {
             var serviceSubscribers = await GetSubscribers(subscribers.Select(p => $"{ _configInfo.SubscriberPath }{ p.ServiceDescriptor.Id}"));
-            if (serviceSubscribers.Any())
+            if (serviceSubscribers.Count() > 0)
             {
                 foreach (var subscriber in subscribers)
                 {

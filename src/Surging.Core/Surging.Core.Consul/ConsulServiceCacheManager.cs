@@ -101,13 +101,10 @@ namespace Surging.Core.Consul
             {
                 foreach (var cacheDescriptor in cacheDescriptors)
                 {
-                    var key = $"{_configInfo.CachePath}{cacheDescriptor.CacheDescriptor.Id}";
                     var nodeData = _serializer.Serialize(cacheDescriptor);
-                    var keyValuePair = new KVPair(key) { Value = nodeData };
+                    var keyValuePair = new KVPair($"{_configInfo.CachePath}{cacheDescriptor.CacheDescriptor.Id}") { Value = nodeData };
                     await client.KV.Put(keyValuePair);
-                   
-                }
-                
+                }                
             }
         }
 
@@ -148,6 +145,7 @@ namespace Surging.Core.Consul
                     result = await GetCache(data);
                 }
             }
+
             return result;
         }
 
@@ -163,8 +161,9 @@ namespace Surging.Core.Consul
                 var clients = await _consulClientFactory.GetClients();
                 foreach (var client in clients)
                 {
-                    
-                    var deletedCacheIds = caches.Select(i => i.CacheDescriptor.Id).ToArray();
+                    var oldCacheIds = _serviceCaches.Select(i => i.CacheDescriptor.Id).ToArray();
+                    var newCacheIds = caches.Select(i => i.CacheDescriptor.Id).ToArray();
+                    var deletedCacheIds = oldCacheIds.Except(newCacheIds).ToArray();
                     foreach (var deletedCacheId in deletedCacheIds)
                     {
                         var nodePath = $"{path}{deletedCacheId}";

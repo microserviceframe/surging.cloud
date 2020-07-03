@@ -275,7 +275,7 @@ namespace Surging.Core.Zookeeper
                     }
                 }
             }
-            await RemoveExceptRoutesAsync(routes, hostAddr);
+            //await RemoveExceptRoutesAsync(routes, hostAddr);
             await base.SetRoutesAsync(routes);
         }
 
@@ -295,7 +295,7 @@ namespace Surging.Core.Zookeeper
                     var deletedRouteIds = oldRouteIds.Except(newRouteIds).ToArray();
                     foreach (var deletedRouteId in deletedRouteIds)
                     {
-                        var addresses = _routes.Where(p => p.ServiceDescriptor.Id == deletedRouteId).Select(p => p.Address).FirstOrDefault();
+                        var addresses = _routes.Where(p => p.ServiceDescriptor.Id == deletedRouteId).Select(p => p.Address).First();
                         if (addresses.Contains(hostAddr))
                         {
                             var nodePath = $"{path}{deletedRouteId}";
@@ -349,7 +349,7 @@ namespace Surging.Core.Zookeeper
         {
             ServiceRoute result = null;
             var zooKeeperClient = await _zookeeperClientProvider.GetZooKeeperClient();
-            if (await zooKeeperClient.ExistsAsync(path))
+            if (await zooKeeperClient.StrictExistsAsync(path))
             {
                 var data = (await zooKeeperClient.GetDataAsync(path)).ToArray();
                 var watcher = nodeWatchers.GetOrAdd(path, f => new NodeMonitorWatcher(path, async (oldData, newData) => await NodeChange(oldData, newData)));
@@ -425,22 +425,33 @@ namespace Surging.Core.Zookeeper
 
             var newRoute = await GetRoute(newData);
 
-            if (_routes != null && _routes.Any() && newRoute != null) 
-            {
-                //得到旧的路由。
+            if (_routes != null && _routes.Any() && newRoute != null)
+            {  //得到旧的路由。
                 var oldRoute = _routes.FirstOrDefault(i => i.ServiceDescriptor.Id == newRoute.ServiceDescriptor.Id);
-
-                lock (_routes)
+                if (newRoute.Address != null && newRoute.Address.Any())
                 {
-                    //删除旧路由，并添加上新的路由。
-                    _routes =
-                        _routes
-                            .Where(i => i.ServiceDescriptor.Id != newRoute.ServiceDescriptor.Id)
-                            .Concat(new[] { newRoute }).ToArray();
-                }
+                  
+                    lock (_routes)
+                    {
+                        //删除旧路由，并添加上新的路由。
+                        _routes =
+                            _routes
+                                .Where(i => i.ServiceDescriptor.Id != newRoute.ServiceDescriptor.Id)
+                                .Concat(new[] { newRoute }).ToArray();
+                    }
 
-                //触发路由变更事件。
-                OnChanged(new ServiceRouteChangedEventArgs(newRoute, oldRoute));
+                    //触发路由变更事件。
+                    OnChanged(new ServiceRouteChangedEventArgs(newRoute, oldRoute));
+                }
+                else 
+                {
+                    lock (_routes)
+                    {
+                        _routes = _routes.Where(i => i.ServiceDescriptor.Id != newRoute.ServiceDescriptor.Id).ToArray();
+                    }
+                    OnRemoved(new ServiceRouteEventArgs(newRoute));
+                }
+                
             }
           
         }
@@ -494,7 +505,7 @@ namespace Surging.Core.Zookeeper
         private async Task<bool> IsNeedUpdateRoutes(int routeCount)
         {
             var commmadManager = ServiceLocator.GetService<IServiceCommandManager>();
-            var commands = commmadManager.GetServiceCommandsAsync().Result;
+            var commands = await commmadManager.GetServiceCommandsAsync();
             if (commands != null && commands.Any() && commands.Count() <= routeCount)
             {
                 if (_logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Warning))

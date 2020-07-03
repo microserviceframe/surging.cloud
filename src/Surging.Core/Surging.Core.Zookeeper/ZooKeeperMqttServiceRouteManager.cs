@@ -189,7 +189,7 @@ namespace Surging.Core.Zookeeper
                     }
                 }
             }
-            await RemoveExceptRoutesAsync(routes, hostAddr);
+            //await RemoveExceptRoutesAsync(routes, hostAddr);
             await base.SetRoutesAsync(routes);
         }
 
@@ -335,19 +335,36 @@ namespace Surging.Core.Zookeeper
             var newRoute = await GetRoute(newData);
             if (_routes != null && _routes.Any() && newRoute != null)
             {
-                //得到旧的mqtt路由。
-                var oldRoute = _routes.FirstOrDefault(i => i.MqttDescriptor.Topic == newRoute.MqttDescriptor.Topic);
-
-                lock (_routes)
+                if (newRoute.MqttEndpoint.Any())
                 {
-                    //删除旧mqtt路由，并添加上新的mqtt路由。
-                    _routes =
-                        _routes
-                            .Where(i => i.MqttDescriptor.Topic != newRoute.MqttDescriptor.Topic)
-                            .Concat(new[] { newRoute }).ToArray();
+                    //得到旧的mqtt路由。
+                    var oldRoute = _routes.FirstOrDefault(i => i.MqttDescriptor.Topic == newRoute.MqttDescriptor.Topic);
+
+                    lock (_routes)
+                    {
+                        //删除旧mqtt路由，并添加上新的mqtt路由。
+                        _routes =
+                            _routes
+                                .Where(i => i.MqttDescriptor.Topic != newRoute.MqttDescriptor.Topic)
+                                .Concat(new[] { newRoute }).ToArray();
+                    }
+                    //触发路由变更事件。
+                    OnChanged(new MqttServiceRouteChangedEventArgs(newRoute, oldRoute));
                 }
-                //触发路由变更事件。
-                OnChanged(new MqttServiceRouteChangedEventArgs(newRoute, oldRoute));
+                else 
+                {
+                    lock (_routes)
+                    {
+                        //删除旧mqtt路由，并添加上新的mqtt路由。
+                        _routes =
+                            _routes
+                                .Where(i => i.MqttDescriptor.Topic != newRoute.MqttDescriptor.Topic).ToArray();
+
+                    }
+
+                    OnRemoved(new MqttServiceRouteEventArgs(newRoute));
+
+                }
 
             }
 
