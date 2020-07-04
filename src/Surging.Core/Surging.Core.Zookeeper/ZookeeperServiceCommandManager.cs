@@ -173,8 +173,16 @@ namespace Surging.Core.Zookeeper
                         zooKeeperClient.DeleteAsync(nodePath).Wait(_configInfo.ConnectionTimeout);
                     }
                 }
-            } catch (NoNodeException ex) {
-                _logger.LogDebug(ex.Message,ex);
+            } catch (Exception ex) 
+            {
+                if (ex is NoNodeException || ex.InnerException is NoNodeException)
+                {
+                    _logger.LogDebug(ex.Message, ex);
+                }
+                else 
+                {
+                    throw ex;
+                }
             }
             
         }
