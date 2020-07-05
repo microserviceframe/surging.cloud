@@ -275,7 +275,7 @@ namespace Surging.Core.Zookeeper
                     }
                 }
             }
-            //await RemoveExceptRoutesAsync(routes, hostAddr);
+            await RemoveExceptRoutesAsync(routes, hostAddr);
             await base.SetRoutesAsync(routes);
         }
 
@@ -290,20 +290,16 @@ namespace Surging.Core.Zookeeper
             {
                 if (_routes != null)
                 {
-                    var oldRouteIds = _routes.Select(i => i.ServiceDescriptor.Id).ToArray();
+                    var oldRouteIds = _routes.Where(p=> !p.Address.Any()).Select(i => i.ServiceDescriptor.Id).ToArray();
                     var newRouteIds = routes.Select(i => i.ServiceDescriptor.Id).ToArray();
                     var deletedRouteIds = oldRouteIds.Except(newRouteIds).ToArray();
                     foreach (var deletedRouteId in deletedRouteIds)
                     {
                         var addresses = _routes.Where(p => p.ServiceDescriptor.Id == deletedRouteId).Select(p => p.Address).First();
-                        if (addresses.Contains(hostAddr))
+                        var nodePath = $"{path}{deletedRouteId}";
+                        if (await zooKeeper.ExistsAsync(nodePath))
                         {
-                            var nodePath = $"{path}{deletedRouteId}";
-                            if (await zooKeeper.ExistsAsync(nodePath)) 
-                            {
-                                await zooKeeper.DeleteAsync(nodePath);
-                            }
-                            
+                            await zooKeeper.DeleteAsync(nodePath);
                         }
                     }
                 }

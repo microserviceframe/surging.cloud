@@ -23,7 +23,7 @@ namespace Surging.Core.CPlatform.Configurations
 
         public int DisconnTimeInterval { get; set; } = 60;
 
-        public int HealthCheckWatchIntervalInSeconds { get; set; } = 10;
+        public int HealthCheckWatchIntervalInSeconds { get; set; } = 30;
 
         public int AllowServerUnhealthyTimes { get; set; } = 5;
 

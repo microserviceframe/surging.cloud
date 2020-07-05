@@ -12,12 +12,12 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks
     /// </summary>
     public interface IHealthCheckService
     {
-        ///// <summary>
-        ///// 监控一个地址。
-        ///// </summary>
-        ///// <param name="address">地址模型。</param>
-        ///// <returns>一个任务。</returns>
-        //Task Monitor(AddressModel address);
+        /// <summary>
+        /// 监控一个地址。
+        /// </summary>
+        /// <param name="address">地址模型。</param>
+        /// <returns>一个任务。</returns>
+        Task Monitor(AddressModel address);
 
         /// <summary>
         /// 判断一个地址是否健康。

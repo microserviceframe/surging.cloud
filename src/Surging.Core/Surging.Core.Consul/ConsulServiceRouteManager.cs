@@ -116,7 +116,7 @@ namespace Surging.Core.Consul
                         route.Address = addresses;
                     }
                 }
-                //await RemoveExceptRoutesAsync(routes, hostAddr);
+                await RemoveExceptRoutesAsync(routes, hostAddr);
                 await base.SetRoutesAsync(routes);
             }
             finally
@@ -238,14 +238,14 @@ namespace Surging.Core.Consul
             {
                 if (_routes != null)
                 {
-                    var oldRouteIds = _routes.Select(i => i.ServiceDescriptor.Id).ToArray();
+                    var oldRouteIds = _routes.Where(p=> !p.Address.Any()).Select(i => i.ServiceDescriptor.Id).ToArray();
                     var newRouteIds = routes.Select(i => i.ServiceDescriptor.Id).ToArray();
                     var deletedRouteIds = oldRouteIds.Except(newRouteIds).ToArray();
                     foreach (var deletedRouteId in deletedRouteIds)
                     {
                         var addresses = _routes.Where(p => p.ServiceDescriptor.Id == deletedRouteId).Select(p => p.Address).FirstOrDefault();
-                        if (addresses.Contains(hostAddr))
-                            await client.KV.Delete($"{_configInfo.RoutePath}{deletedRouteId}");
+                        await client.KV.Delete($"{_configInfo.RoutePath}{deletedRouteId}");
+
                     }
                 }
             }

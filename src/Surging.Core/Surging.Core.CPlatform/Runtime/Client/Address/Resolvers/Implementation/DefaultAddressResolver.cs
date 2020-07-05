@@ -92,7 +92,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.Address.Resolvers.Implementation
             var address = new List<AddressModel>();
             foreach (var addressModel in descriptor.Address)
             {
-                //await _healthCheckService.Monitor(addressModel);
+                await _healthCheckService.Monitor(addressModel);
                 var isHealth = await _healthCheckService.IsHealth(addressModel);
                 if (!isHealth)
                 {
