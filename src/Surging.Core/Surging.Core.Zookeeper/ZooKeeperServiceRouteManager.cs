@@ -275,7 +275,7 @@ namespace Surging.Core.Zookeeper
                     }
                 }
             }
-            await RemoveExceptRoutesAsync(routes, hostAddr);
+            //await RemoveExceptRoutesAsync(routes, hostAddr);
             await base.SetRoutesAsync(routes);
         }
 

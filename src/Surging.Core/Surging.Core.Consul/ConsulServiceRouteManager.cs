@@ -116,7 +116,7 @@ namespace Surging.Core.Consul
                         route.Address = addresses;
                     }
                 }
-                await RemoveExceptRoutesAsync(routes, hostAddr);
+                //await RemoveExceptRoutesAsync(routes, hostAddr);
                 await base.SetRoutesAsync(routes);
             }
             finally
