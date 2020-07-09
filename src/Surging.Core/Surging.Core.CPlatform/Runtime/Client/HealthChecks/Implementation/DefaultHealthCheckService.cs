@@ -61,6 +61,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                 await Check(_dictionary.ToArray().Select(i => i.Value), _timeout);
                 //移除不可用的服务地址
                 RemoveUnhealthyAddress(_dictionary.ToArray().Select(i => i.Value).Where(m => m.UnhealthyTimes >= AppConfig.ServerOptions.AllowServerUnhealthyTimes));
+            
             };
             _timer.Start();
             //去除监控。
@@ -98,8 +99,6 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
         }
 
 
-
-
         #region Implementation of IHealthCheckService
 
         /// <summary>
@@ -128,12 +127,24 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
         {
             var ipAddress = address as IpAddressModel;
             MonitorEntry entry;
-            var isHealth = !_dictionary.TryGetValue(new Tuple<string, int>(ipAddress.Ip, ipAddress.Port), out entry) ? await Check(address, _timeout) : entry.Health;
-            OnChanged(new HealthCheckEventArgs(address, isHealth));
-            return isHealth;
+            if (_dictionary.TryGetValue(new Tuple<string, int>(ipAddress.Ip, ipAddress.Port), out entry))
+            {
+                await Check(entry, _timeout);
+            }
+            else 
+            {
+                entry = new MonitorEntry(address);
+                await Check(entry, _timeout);
+                _dictionary.TryAdd(new Tuple<string, int>(ipAddress.Ip, ipAddress.Port), entry);
+            }
+            if (entry.UnhealthyTimes >= AppConfig.ServerOptions.AllowServerUnhealthyTimes) 
+            {
+                RemoveUnhealthyAddress(entry);
+            }
+            OnChanged(new HealthCheckEventArgs(address, entry.Health));
+            return entry.Health;
 
         }
-
 
 
         /// <summary>
@@ -242,52 +253,39 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
             return isHealth;
 
         }
-
-        private static async Task<bool> Check(AddressModel address, int timeout)
-        {
-            var ipEndPoint = address.CreateEndPoint() as IPEndPoint;
-            var isHealth = await CheckIpHealth(ipEndPoint.Address, timeout);
-            if (isHealth)
-            {
-                using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { SendTimeout = timeout })
-                {
-                    try
-                    {
-                        await socket.ConnectAsync(address.CreateEndPoint());
-
-                    }
-                    catch
-                    {
-                        isHealth = false;
-                    }
-                }
-            }
-            else
-            {
-                isHealth = false;
-            }
-            return isHealth;
-        }
-
         private static async Task Check(MonitorEntry entry, int timeout)
         {
             var ipEndPoint = entry.EndPoint as IPEndPoint;
             var isHealth = await CheckIpHealth(ipEndPoint.Address, timeout);
             if (isHealth)
             {
-                using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { SendTimeout = timeout })
+                TcpClient client = new TcpClient();
+                try
                 {
-                    try
+                    var endpont = (IPEndPoint)entry.EndPoint;
+                    var ar = client.BeginConnect(endpont.Address, endpont.Port, null, null);
+                    ar.AsyncWaitHandle.WaitOne(timeout);
+                    if (client.Connected)
                     {
-                        await socket.ConnectAsync(entry.EndPoint);
                         entry.UnhealthyTimes = 0;
                         entry.Health = true;
                     }
-                    catch
+                    else
                     {
+                        _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康");
                         entry.UnhealthyTimes++;
                         entry.Health = false;
                     }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康,原因:{ex.Message}");
+                    entry.UnhealthyTimes++;
+                    entry.Health = false;
+                }
+                finally
+                {
+                    client.Close();
                 }
             }
             else 
@@ -306,28 +304,41 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                 var isHealth = await CheckIpHealth(ipEndPoint.Address, timeout);
                 if (isHealth)
                 {
-                    using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { SendTimeout = timeout })
+                    TcpClient client = new TcpClient();
+                    try
                     {
-                        try
+                        var endpont = (IPEndPoint)entry.EndPoint;
+                        var ar = client.BeginConnect(endpont.Address, endpont.Port, null, null);
+                        ar.AsyncWaitHandle.WaitOne(timeout);
+                        if (client.Connected)
                         {
-                            await socket.ConnectAsync(entry.EndPoint);
                             entry.UnhealthyTimes = 0;
                             entry.Health = true;
                         }
-                        catch(Exception ex)
+                        else
                         {
-                            _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康,原因:{ex.Message}");
+                            _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康");
                             entry.UnhealthyTimes++;
                             entry.Health = false;
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康,原因:{ex.Message}");
+                        entry.UnhealthyTimes++;
+                        entry.Health = false;
+                    }
+                    finally
+                    {
+                        client.Close();
+                    }
                 }
-                else 
+                else
                 {
                     entry.UnhealthyTimes++;
                     entry.Health = false;
                 }
-                
+
             }
         }
 
