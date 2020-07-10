@@ -56,19 +56,28 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
             }
             catch (CommunicationException)
             {
-                if (address != null) 
+                if (address != null)
                 {
                     await _healthCheckService.MarkFailure(address);
                 }
-                    
+
+                throw;
+            }
+            catch (TimeoutException ex)
+            {
+                if (address != null)
+                {
+                    _logger.LogError($"使用地址：'{address.ToString()}'调用服务{context.InvokeMessage.ServiceId}超时,原因:{ex.Message}");
+                    await _healthCheckService.MarkFailureForTimeOut(address);
+                }
                 throw;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, $"发起请求中发生了错误，服务Id：{invokeMessage.ServiceId}。");
-                
+
                 throw;
-            }
+            }            
         }
 
         public async Task<RemoteInvokeResultMessage> InvokeAsync(RemoteInvokeContext context, int requestTimeout)
@@ -106,7 +115,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.Implementation
                 if (address != null)
                 {
                     _logger.LogError($"使用地址：'{address.ToString()}'调用服务{context.InvokeMessage.ServiceId}超时,原因:{ex.Message}");
-                    await _healthCheckService.MarkFailure(address);
+                    await _healthCheckService.MarkFailureForTimeOut(address);
                 }
                 throw;
             }

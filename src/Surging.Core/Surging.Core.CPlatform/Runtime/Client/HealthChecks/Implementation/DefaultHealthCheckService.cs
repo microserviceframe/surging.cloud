@@ -60,7 +60,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                 //检查服务是否可用
                 await Check(_dictionary.ToArray().Select(i => i.Value), _timeout);
                 //移除不可用的服务地址
-                RemoveUnhealthyAddress(_dictionary.ToArray().Select(i => i.Value).Where(m => m.UnhealthyTimes >= AppConfig.ServerOptions.AllowServerUnhealthyTimes));
+                RemoveUnhealthyAddress(_dictionary.ToArray().Select(i => i.Value).Where(m => m.UnhealthyCount >= AppConfig.ServerOptions.AllowServerUnhealthyTimes && m.TimeOutCount >= AppConfig.ServerOptions.AllowServerUnhealthyTimes));
             
             };
             _timer.Start();
@@ -127,17 +127,13 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
         {
             var ipAddress = address as IpAddressModel;
             MonitorEntry entry;
-            if (_dictionary.TryGetValue(new Tuple<string, int>(ipAddress.Ip, ipAddress.Port), out entry))
-            {
-                await Check(entry, _timeout);
-            }
-            else 
+            if (!_dictionary.TryGetValue(new Tuple<string, int>(ipAddress.Ip, ipAddress.Port), out entry))
             {
                 entry = new MonitorEntry(address);
                 await Check(entry, _timeout);
                 _dictionary.TryAdd(new Tuple<string, int>(ipAddress.Ip, ipAddress.Port), entry);
             }
-            if (entry.UnhealthyTimes >= AppConfig.ServerOptions.AllowServerUnhealthyTimes) 
+            if (entry.UnhealthyCount >= AppConfig.ServerOptions.AllowServerUnhealthyTimes || entry.TimeOutCount >= AppConfig.ServerOptions.AllowServerUnhealthyTimes) 
             {
                 RemoveUnhealthyAddress(entry);
             }
@@ -159,6 +155,20 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                 var ipAddress = address as IpAddressModel;
                 var entry = _dictionary.GetOrAdd(new Tuple<string, int>(ipAddress.Ip, ipAddress.Port), k => new MonitorEntry(address));
                 entry.Health = false;
+                entry.UnhealthyCount += 1;
+            });
+        }
+
+        public Task MarkFailureForTimeOut(AddressModel address)
+        {
+            return Task.Run(() =>
+            {
+                var ipAddress = address as IpAddressModel;
+                var entry = _dictionary.GetOrAdd(new Tuple<string, int>(ipAddress.Ip, ipAddress.Port), k => new MonitorEntry(address));
+                entry.Health = false;
+                entry.UnhealthyCount += 1;
+                entry.TimeOutCount += 1;
+                entry.TimeOutTime = DateTime.Now;
             });
         }
 
@@ -267,20 +277,25 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                     ar.AsyncWaitHandle.WaitOne(timeout);
                     if (client.Connected)
                     {
-                        entry.UnhealthyTimes = 0;
+                        entry.UnhealthyCount = 0;
                         entry.Health = true;
+                        if (entry.TimeOutCount > 0 && entry.TimeOutTime.HasValue && (DateTime.Now - entry.TimeOutTime.Value).TotalDays > 1)
+                        {
+                            entry.TimeOutCount = 0;
+                            entry.TimeOutTime = null;
+                        }
                     }
                     else
                     {
                         _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康");
-                        entry.UnhealthyTimes++;
+                        entry.UnhealthyCount++;
                         entry.Health = false;
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康,原因:{ex.Message}");
-                    entry.UnhealthyTimes++;
+                    entry.UnhealthyCount++;
                     entry.Health = false;
                 }
                 finally
@@ -290,7 +305,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
             }
             else 
             {
-                entry.UnhealthyTimes++;
+                entry.UnhealthyCount++;
                 entry.Health = false;
             }
             
@@ -312,20 +327,25 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                         ar.AsyncWaitHandle.WaitOne(timeout);
                         if (client.Connected)
                         {
-                            entry.UnhealthyTimes = 0;
+                            entry.UnhealthyCount = 0;
                             entry.Health = true;
+                            if (entry.TimeOutCount > 0 && entry.TimeOutTime.HasValue && (DateTime.Now - entry.TimeOutTime.Value).TotalDays > 1) 
+                            {
+                                entry.TimeOutCount = 0;
+                                entry.TimeOutTime = null;
+                            }
                         }
                         else
                         {
                             _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康");
-                            entry.UnhealthyTimes++;
+                            entry.UnhealthyCount++;
                             entry.Health = false;
                         }
                     }
                     catch (Exception ex)
                     {
                         _logger.LogWarning($"服务{entry.EndPoint.ToString()}不健康,原因:{ex.Message}");
-                        entry.UnhealthyTimes++;
+                        entry.UnhealthyCount++;
                         entry.Health = false;
                     }
                     finally
@@ -335,7 +355,7 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
                 }
                 else
                 {
-                    entry.UnhealthyTimes++;
+                    entry.UnhealthyCount++;
                     entry.Health = false;
                 }
 
@@ -352,12 +372,19 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks.Implementation
             {
                 EndPoint = addressModel.CreateEndPoint();
                 Health = false;
+                UnhealthyCount = 0;
+                TimeOutCount = 0;
 
             }
 
-            public int UnhealthyTimes { get; set; }
+            public int UnhealthyCount { get; set; }
+
+            public int TimeOutCount { get; set; }
+
+            public DateTime? TimeOutTime { get; set; }
 
             public EndPoint EndPoint { get; set; }
+
             public bool Health { get; set; }
         }
 

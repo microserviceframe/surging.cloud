@@ -33,6 +33,8 @@ namespace Surging.Core.CPlatform.Runtime.Client.HealthChecks
         /// <returns>一个任务。</returns>
         Task MarkFailure(AddressModel address);
 
+        Task MarkFailureForTimeOut(AddressModel address);
+
         event EventHandler<HealthCheckEventArgs> Removed;
 
         event EventHandler<HealthCheckEventArgs> Changed;
