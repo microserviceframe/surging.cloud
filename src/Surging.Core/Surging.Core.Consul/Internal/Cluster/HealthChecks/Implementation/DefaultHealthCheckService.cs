@@ -66,20 +66,6 @@ namespace Surging.Core.Consul.Internal.Cluster.HealthChecks.Implementation
         {
             foreach (var entry in entrys)
             {
-                //using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { SendTimeout = timeout })
-                //{
-                //    try
-                //    {
-                //        await socket.ConnectAsync(entry.EndPoint);
-                //        entry.UnhealthyTimes = 0;
-                //        entry.Health = true;
-                //    }
-                //    catch
-                //    {
-                //        entry.UnhealthyTimes++;
-                //        entry.Health = false;
-                //    }
-                //}
                 var ipEndpoint = entry.EndPoint as IPEndPoint;
                 if (SocketCheck.TestConnection(ipEndpoint.Address, ipEndpoint.Port, timeout))
                 {

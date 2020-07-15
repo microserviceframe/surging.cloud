@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Surging.Core.CPlatform.Address;
+using Surging.Core.CPlatform.Utilities;
 
 namespace Surging.Core.Zookeeper.Internal.Cluster.HealthChecks.Implementation
 {
@@ -57,39 +58,24 @@ namespace Surging.Core.Zookeeper.Internal.Cluster.HealthChecks.Implementation
 
         private static async Task<bool> Check(AddressModel address, int timeout)
         {
-            bool isHealth = false;
-            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { SendTimeout = timeout })
-            {
-                try
-                {
-                    await socket.ConnectAsync(address.CreateEndPoint());
-                    isHealth = true;
-                }
-                catch
-                {
-
-                }
-                return isHealth;
-            }
+            var ipEndpoint = address.CreateEndPoint() as IPEndPoint;
+            return SocketCheck.TestConnection(ipEndpoint.Address, ipEndpoint.Port, timeout);
         }
 
         private static async Task Check(IEnumerable<MonitorEntry> entrys, int timeout)
         {
             foreach (var entry in entrys)
             {
-                using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { SendTimeout = timeout })
+                var ipEndpoint = entry.EndPoint as IPEndPoint;
+                if (SocketCheck.TestConnection(ipEndpoint.Address, ipEndpoint.Port, timeout))
                 {
-                    try
-                    {
-                        await socket.ConnectAsync(entry.EndPoint);
-                        entry.UnhealthyTimes = 0;
-                        entry.Health = true;
-                    }
-                    catch
-                    {
-                        entry.UnhealthyTimes++;
-                        entry.Health = false;
-                    }
+                    entry.UnhealthyTimes = 0;
+                    entry.Health = true;
+                }
+                else
+                {
+                    entry.UnhealthyTimes++;
+                    entry.Health = false;
                 }
             }
         }
